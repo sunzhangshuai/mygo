@@ -601,3 +601,499 @@
 
 - 安装`golint`工具：`go get -u golang.org/x/lint/golint`。
 - 检查目录下所有代码：`golint -min_confidence=0.3 ./..`。
+
+# IO与网络编程
+
+## 标准库的io设施
+
+- **数据生产和消费终端**
+
+  > 以 `io.Reader` 和 ` io.Writer` 的方式暴露数据的产生和消费接口。
+
+  - *应用*
+
+    > os文件
+    >
+    > 内存文件
+    >
+    > 网络和http
+    >
+    > 随机数
+    >
+    > hash计算
+    >
+    > 格式化输入输出
+    >
+    > 归档
+
+  - *文件操作*
+
+    - **小文件整存整取**
+
+      > 文件很小
+
+      ```go
+      // 整读文件
+      content, err := os.ReadFile("filename")
+      
+      // 整存文件
+      err := os.WriteFile("filename", content, 0644)
+      ```
+
+    - **流式读取文件**
+
+      > 文件很大、流式处理，边读取边处理，一般结合中间件
+
+      ```go
+      f, _: = os.Open("filename")
+      defer f.Close()
+      io.Copy(os.Stdout, f)
+      ```
+
+    - **按行处理文件**
+
+      > 文件内容是以文本行组织的内容，内容较多，整读不合适。
+
+      ```go
+      f, _: = os.Open("filename")
+      defer f.Close()
+      scanner := bufio.NewScanner(f)
+      for scanner.Scan(){
+        line := scanner.Text()
+      }
+      ```
+
+  - *内存文件*
+
+    > - 测试的时候需要mock文件
+    >
+    > - 有些函数只接受 `io.Reader` 接口或者 `io.Writer` 接口。
+    > - 两个工具可以使用： `strings.Reder` 、 `bytes.Buffer`。
+
+    ```go
+    buf := bytes.Buffer{}
+    resp, err := http.Post("url", "type", &buf)
+    ```
+
+  - *随机数生成*
+
+    > 以文件的接口提供随机数据的读取。
+
+    ```go
+    buf := make([]byte, 8)
+    io.ReadFull(rand.Reader, buf)
+    result := hex.EncodeToString(buf)
+    ```
+
+    ```go
+    f, os := os.OpenFlie("/dev/sdb", os.O_RDAW, 0755)
+    defer f.Close()
+    io.Copy(f, crypto.Reader)
+    ```
+
+    > 三行代码深度格式化。
+
+  - *实现/dev/zero*
+
+    - **通过自定义类型实现**
+
+      ```go
+      type zeroReader struct {}
+      
+      func (z zeroReader) Read(buf []byte)(int, error) {
+        if i := range buf {
+          buf[0] = 0
+        }
+        return len(buf), nil
+      }
+      ```
+
+    - **初始化一个1M大小的空文件**
+
+      ```go
+      f, _ := os.Create("filename")
+      defer f.Close()
+      io.Copy(f, &io.LimitReader{
+        R: new(zeroReader),
+        N: 1<<20,
+      })
+      ```
+
+  - *hash计算*
+
+    > hash计算，如md5的计算是一个不断更新的过程
+
+    ```go
+    content := []byte("hello world")
+    
+    var sum [md5.Size]byte
+    sum = md5.Sum(content)
+    ```
+
+    > 小数据使用一次性函数
+
+    ```go
+    content := []byte("hello world")
+    
+    h := md5.New()
+    r := bytes.NewBuffer(content)
+    io.Copy(h, r)
+    sum = h.Sum(nil)
+    ```
+
+    > 大数据使用文件接口。流式计算。占用内存少。
+
+  - *格式化输入输出*
+
+    > 可以用于所有的 「类文件」 对象。
+
+    ```go
+    func handle(w http.ResponseWriter, r *http.Request) {
+      fmt.Fprintf(w, "%S", time.Now())
+    }
+    ```
+
+- **数据中间件**
+
+  > 偏向组合而非继承。
+  >
+  > 可以透明替换原组件。
+  >
+  > 典型接口签名是传入一个 `io.Reader/io.Writer`，返回一个 `io.Reader/io.Writer`
+
+  - *应用*
+
+    > `bufio.Reader`、`gzip.Reader`
+
+  - *bufio*
+
+    > bufio建立蓄水池，把分散的读写操作变成整读整取，提升吞吐。
+    >
+    > 原始的 `bufio.Reader` 只能读取字节流，`bufio` 将流按照某种分隔符分隔读取。
+    >
+    > 解析复杂协议的时候特别有用。系统调用耗时，不会每读几个字节都进行一次系统调用。
+
+    ```go
+    type RpcHeader struct {
+      Magic [4]byte
+      TotalSize uint32
+      Checksum uint32
+    }
+    
+    r := bufio.NewReader(conn)
+    var header RpcHeader
+    binary.Read(r, binary.BigEndian, &header)
+    ```
+
+    > 结合bufio和binary读取/写入定长数据。
+
+  - *压缩和解压缩*
+
+    - **将普通文件进行gzip压缩**
+
+      ```go
+      func main() {
+        w := gzip.NewWriter(os.Stdout)
+        io.Copy(w, os.Stdin)
+      }
+      ```
+
+      > ```shell
+      > go build gzip.go
+      > gzip <urls.txt >urls.txt.gz
+      > ```
+
+    - **将gz文件进行解压缩**
+
+      ```go
+      func main() {
+        r, err := gzip.NewReader(os.Stdin)
+        if err != nil {
+          panic(err)
+        }
+        io.Copy(os.Stdout, r)
+      }
+      ```
+
+      > ```shell
+      > go build -o ungzip ungzip.go
+      > ungzip <urls.txt.gz >urls.txt
+      > ```
+
+  - *编解码*
+
+    > hex用于16进制编解码，base64用于base64的编解码
+    >
+    > 两者都提供流式接口
+
+    ```go
+    func main() {
+      if len(os.Args) > 1 && os.Args[1] == "-d" {
+        r := base64.NewDecoder(base64.URLEncoding, os.Stdin)
+        io.Copy(os.Stdout, r)
+      } else {
+        w := base64.NewEecoder(base64.URLEncoding, os.Stdout)
+        io.Copy(w, os.Stdin)
+      }
+    }
+    ```
+
+  - *数据分流*
+
+    > Linux 的 tee 命令
+    >
+    > 可以把数据流分流到一个文件中。 `cat urls.txt | grep | tee grep.txt | uniq` 
+
+    ```go
+    func main() {
+      f, _ := os.Create(os.Args[1])
+      defer f.Close()
+      tr := io.TeeReader(os.Stdin, f)
+      io.Copy(os.Stdout, tr)
+    }
+    ```
+
+  - *多路归并和多路复制*
+
+    > ```go
+    > // 多路归并
+    > func MultiReader(readers ...Reader) Reader
+    > 
+    > // 多路复制
+    > func MultiWriter(writers ...Writer) Writer
+    > ```
+
+    - **边下载边计算hash**
+
+      ```go
+      func main() {
+        resp, _ := http.Get("url")
+        defer resp.Body.Close()
+        
+        h := sha256.New()
+        w := io.MultiWriter(os.Stdout, h)
+        io.Copy(w, resp.Body)
+        fmt.Fprintf(os.Stderr, "%x\n", h.Sum(nil))
+      }
+      ```
+
+- **工具库**
+
+  - *应用*
+
+    > `ioutil`、`io.Copy`
+
+## 网络模型
+
+> c10问题，1W并发问题。
+>
+> **以http服务器来讨论**
+>
+> - 传统http服务器，用户发送请求、解析请求、查询数据库、逻辑处理。返回结果。
+> - 混合**io**和**cpu**计算。
+> - 在处理函数中考虑了第三方服务的**io**请求
+
+- **多线程Accpet**
+
+  > **阻塞io模型** <img src="./imgs/多线程accept.png" style="zoom:90%;" />
+
+  ```go
+  listener := net.Listen()
+  for {
+    conn := listener.Accpet()
+    thread := NewThread(func(){
+      HandleConn(conn)
+    })
+    thread.Start()
+  }
+  
+  func HandleConn(conn) {
+    req := ParseRequest(conn)
+    resp := DoSQLQuery(req)
+    SendResponse(conn, resp)
+    conn.Close()
+  }
+  ```
+
+  > java在通过线程池用
+  >
+  > 并发大时线程个数会成为瓶颈，不利于扩展。
+  >
+  > **线程切换开销大**。
+
+- **单线程多路复用**
+
+  > **非阻塞io模型** <img src="./imgs/单线程多路复用.png" style="zoom:70%;" />
+
+  ```go
+  listener := net.Listen()
+  listener.OnAccept(func(conn) {
+    conn.OnRead(func(conn) {
+      req := ParseRequest(conn)
+    	sqlConn := DoSQLQuery(req)
+      sqlConn.OnFinish(func(sqlConn) {
+        resp := sqlConn.Read()
+        SendResponse(conn, resp)
+      })
+    })
+    conn.OnClose(func() {
+      // handle close
+    })
+  })
+  ```
+
+  - *优点*
+    - 大部分不用考虑锁。
+    - 性能好，没有过多上下文切换开销。
+  - *缺点*
+    - 单线程模型不能充分利用多核。
+    - 回调风格割裂业务逻辑，阅读困难。
+    - 回调函数里面的阻塞会阻塞其他请求。**【传染性】**
+    - 计算密集型任务饿死其他请求。
+
+- **多路复用+多线程worker**
+
+  > **非阻塞io模型** <img src="./imgs/多线程worker.png" style="zoom:70%;" />
+
+  ```go
+  listener := net.Listen()
+  listener.OnAccept(func(conn) {
+    conn.OnRead(func(conn) {
+      thireadPool.Put(func() {
+        HandleConn(conn)
+      })
+    })
+    conn.OnClose(func() {
+      // handle close
+    })
+  })
+  
+  func HandleConn(conn) {
+    req := ParseRequest(conn)
+    resp := DoSQLQuery(req)
+    SendResponse(conn, resp)
+  }
+  ```
+
+  - *优点*
+    - 能充分使用多核。
+    - 使用线性代码模型，减少心智负担，阅读舒服。
+  - *缺点*
+    - 线程有创建开销。
+    - 线程数上去后，上下文切换开销会变大。
+    - 限制了并发个数。
+
+### 并发
+
+$$
+并发 = 吞吐量 * 响应时间
+$$
+
+- cpu代表了系统的处理能力上线。
+- 关键是充分利用cpu资源，不能闲着。
+- 并发是提升 qps 的关键，但不能让时延也跟着提升。
+- 多线程增加了延时。
+- 单线程非阻塞浪费了多核即并发。
+
+### 理想的网络模型
+
+1. 像多线程一样的线性代码风格，书写起来容易读懂，没有回调地狱。
+2. 充分利用多核，简单在增加机器核心就能获取性能上的提升。
+3. io处理和cpu密集计算处理可以混搭使用，不担心阻塞问题。
+4. 妥善处理阻塞的系统调用。
+5. 使用第三方库无心智负担，如考虑是阻塞还是非阻塞。
+
+## 基于协程的处理方案
+
+> - 有栈协程：go、lua等
+>
+> - 无栈协程：python、es6等。 async、await关键字。
+>
+> - 有栈协程可以认为是用户态线程实现，有调度器。
+> - 无栈协程通过编译器进行变换，是 generator 挥着回调函数的语法糖。
+
+## GO并发模型
+
+> <img src="./imgs/go并发模型.png" style="zoom:100%;" />
+
+### 网络模型
+
+- 基于 Goroutine 的并发方案。
+- 更像传统上的基于多线程的并发方案，一个连接一个 Goroutine。
+- 由于 Goroutine 更轻量，在调度和资源上的开销都很小，因此优于多线程方案。
+- 对比单线程回调方案省去了代码上的复杂度。
+- 可以复用已有的io组件。
+
+```go
+listener := net.Listen("tcp", ":8080")
+defer listener.Close()
+
+for {
+  conn, _ := listener.Accept()
+  
+  go func(conn net.Conn) {
+    // handle
+  }
+}
+```
+
+> 服务端模板
+
+```go
+client := net.Dial("tcp", ":8080")
+defer client.Close()
+
+// do
+```
+
+> 客户端模板
+
+- **内幕**
+
+  > <img src="./imgs/go网络模型结构.png" style="zoom:100%;" />
+
+  - *netpoller*
+
+    > Linux 用的 epoll。
+
+  - *调度器*
+
+    > 查找可用G时查询 netpoller 获取就绪的 G。
+
+  - *sysmon*
+
+    > 定时调用 netpoller 获取就绪的 G，加入全局G队列。
+
+  - *GMP模型*
+
+    > 基础并发组件。
+
+- **网络轮询时机**
+
+  > - Go编译器在函数的入口加入桩代码，方便进行栈扩容，**同时检查当前是否时间过长**。也是goroutine调度的时机。
+  >
+  > - goroutine调用了阻塞函数，如fmt.Println。
+  > - sysmon主动检查：作为独立的goroutine定时gc，抢占调度goroutine以及轮训netpoller。
+
+- **水平与边沿触发**
+
+- **与标准库完美联动**
+
+## 注意事项
+
+- **使用流式 IO 接口**
+
+  > 尽量避免将数据读入 [] byte 并传递。不然可能将很大的数据（几兆字节或更多）读取到内存中。 这给 GC 带来了巨大压力，这将增加应用程序的平均延迟。相反，可以使用 io.Reader 和 io.Writer 接口来构建流式处理以限制每个请求使用的内存量。
+
+- **设置超时**
+
+  > 不要开启一个未设置超时的 IO 操作，因为一次 IO 操作消耗的时间是未知的，一次 RPC 请求中出现未设置超时的 IO 操作，将会导致服务器处理这次请求的耗时不可控，在开发中需要注意尽量使用 如：`SetDeadline`, `SetReadDeadline`, `SetWriteDeadline` 函数给每一个 IO 操作设置超时机制。
+
+- **避免开启大量 gouroutine**
+
+  > 官方虽然号称 goroutine 是廉价的，但是由于 goroutine 的调度并没有实现优先级控制，使得一些关键性的 goroutine（如网络/磁盘IO，控制全局资源的 goroutine）没有及时得到调度而拖慢了整体服务的响应时间。Go 运行时使用有效的操作系统轮询机制（kqueue，epoll，windows IOCP 等）来处理网络 IO。 一个单一的操作系统线程将为许多等待的 goroutine 提供服务。但是，对于本地文件 IO，Go 不会实现任何 IO 轮询。 * os.File 上的每个操作在进行中都会消耗一个操作系统线程。并且磁盘 IO 是串行的，大量使用本地文件 IO 可能导致程序产生大量线程，超出操作系统所允许的范围。
+
+- **读大文件时选择合适的方法**
+
+  > 如果读文件时字符串过大, 需要考虑避免将内存复制到临时缓冲区中，比如： bufio 的 ReadString(f) 方法会将文件 f 全部读取为一个字符串，对内存开销很大，使用 io.Copy(dest, src)，可以将 src 的内容流式 copy 到 dest 中。它就是在文件指针之间直接复制的，不用全读入内存。
+
