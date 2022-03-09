@@ -1097,3 +1097,173 @@ defer client.Close()
 
   > 如果读文件时字符串过大, 需要考虑避免将内存复制到临时缓冲区中，比如： bufio 的 ReadString(f) 方法会将文件 f 全部读取为一个字符串，对内存开销很大，使用 io.Copy(dest, src)，可以将 src 的内容流式 copy 到 dest 中。它就是在文件指针之间直接复制的，不用全读入内存。
 
+# Golang基础原理
+
+## 数据类型
+
+> golang变量都是值，只是看起来像引用。
+
+### 基础类型
+
+> 数字、字符、布尔
+
+### 复合类型
+
+> 数组、结构、切片、管道、map、指针、函数、接口。
+
+- **array**
+
+  - 数组的长度也是类型的属性，`[10]int` 和 `[20]int` 是不同的类型。
+  - 数组就是值，对数组赋值会拷贝所有元素。
+
+- **struct**
+
+  - `type` 和 `*type` 是两个不同的类型，但操作基本是兼容的。
+  - 成员函数调用时，变量会作为参数传递到函数中。
+
+- **slice**
+
+  > 缩写：a[low:high]，区间：a[low, high)
+  >
+  > 完整：a[low:high:max]，区间：a[low, max)
+  >
+  > 0 <= low <= high <= max <= cap(a)
+
+  - 赋值耗时和长度无关。
+
+  - 能通过函数修改成员。
+
+  - 赋值会引用相同的数据。
+
+  - *数据重分配情况*
+
+    > old.cap < 1024,  cap *= 2
+    >
+    > old.cap > 1024,  cap *= 1.5
+    >
+    > 重分配会发生数据拷贝。
+
+- **string**
+
+  - 本质是{Date, Len}的struct。
+
+  - 是不可修改的。
+
+  - slice和string互转时，是会发生内存拷贝的。【slice可修改，string不可修改】
+
+    - 通过反射修改Data实现零拷贝。
+
+      ```go
+      func BytesCastToString(bs []byte) (str string) {
+        sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+        stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&str))
+        stringHeader.Data = sliceHeader.Data
+        stringHeader.Len = sliceHeader.Len
+        return str
+      }
+      
+      func StringCastToBytes(str string) (bs []byte) {
+        stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&str))
+        sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+        sliceHeader.Data = stringHeader.Data
+        sliceHeader.Len = stringHeader.Len
+        sliceHeader.Cap = stringHeader.Len
+        return bs
+      }
+      ```
+
+      > Gc 会发生逃逸。
+
+    - 这样转后的slice依然不能修改，转后的string，原slice修改后，string也会修改。
+
+- **interface**
+
+  > *类型*
+  >
+  > *set of methods*
+
+  - 类型和值都相等时，才能相等。
+  - 类型转换时，接口定义的函数才会被拷贝到 `fun` 数组中。函数按名字进行排序。
+  - 空 `interface` 没有任何成员函数，可以转换任何类型。
+  - `interface` 转换是低成本的，鼓励。只会赋值类型指针和数据指针。
+
+- **chan**
+
+  > <img src="./imgs/chan.png" style="zoom:100%;" />
+
+  - <img src="./imgs/chan读写.png" style="zoom:100%;" />
+
+- **define&alias**
+
+  ```go
+  type Byte uint8
+  var u8 uint8 = 1
+  var byt Byte = Byte(u8)
+  ```
+
+  > define：Byte 和 uint8需要类型转换
+
+  ```go
+  type Byte = uint8
+  var u8 uint8 = 1
+  var byt Byte = u8
+  ```
+
+  > alias：不需要类型转换
+
+## 运行时调度
+
+### GPM模型
+
+> <img src="./imgs/gpm模型.png" style="zoom:100%;" />
+>
+> **G**：goroutine。
+>
+> **P**：processor。默认和cpu核数相同。
+>
+> **M**：thread。
+
+- P是逻辑处理器，可以通过 `runtime.GOMAXPROCS(int)` 修改。
+- P的Local队列最大长度256，Global队列长度没有限制。
+- P实现了队列thread-local，减少线程间同步锁，变量同步。
+- M是真实线程，当M进入阻塞系统调用时，P晖哥M解绑，然后创建新的M来执行G，逻辑上P的数量是固定的。
+- 当M队列为空时，会通过work stealing去其他M的队列获取 `goroutine`。
+
+### 协程切换
+
+- **切换时机**
+
+  > <img src="./imgs/goroutine生命周期.png" style="zoom:100%;" />
+
+- **抢占式调度**。
+
+### chan
+
+### 多分支满足
+
+- switch是顺序判定。
+- select是随机选取。
+
+## 项目构建
+
+- **实用工具**
+
+  ```makefile
+  fmt:
+  	for pkg in $(GOPKGS); do \
+    	gofmt -d -w "$(SRCDIR)/$$(pkg)";\
+     done
+  ```
+
+  > 自动化格式代码
+
+  ```makefile
+  lint:
+  	for pkg in $(GOPKGS); do \
+    	$(GO) tool vet -all -shadow "$(SRCDIR)/$$(pkg)";\
+    done
+  ```
+
+  > 代码静态检查，策略与bugbye的检查相同。
+
+# GO 并发编程实战
