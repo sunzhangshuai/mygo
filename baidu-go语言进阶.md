@@ -1213,15 +1213,15 @@ defer client.Close()
 
 ## 运行时调度
 
-### GPM模型
+### GMP模型
 
 > <img src="./imgs/gpm模型.png" style="zoom:100%;" />
 >
 > **G**：goroutine。
 >
-> **P**：processor。默认和cpu核数相同。
+> **P**：processor。默认和cpu核数相同。调度实体。
 >
-> **M**：thread。
+> **M**：thread。系统线程。
 
 - P是逻辑处理器，可以通过 `runtime.GOMAXPROCS(int)` 修改。
 - P的Local队列最大长度256，Global队列长度没有限制。
@@ -1250,20 +1250,302 @@ defer client.Close()
 
   ```makefile
   fmt:
-  	for pkg in $(GOPKGS); do \
-    	gofmt -d -w "$(SRCDIR)/$$(pkg)";\
-     done
+    for pkg in $(GOPKGS); do 
+    	gofmt -d -w "$(SRCDIR)/$$(pkg)";
+    done
   ```
 
   > 自动化格式代码
 
   ```makefile
   lint:
-  	for pkg in $(GOPKGS); do \
-    	$(GO) tool vet -all -shadow "$(SRCDIR)/$$(pkg)";\
+    for pkg in $(GOPKGS); do
+    	$(GO) tool vet -all -shadow "$(SRCDIR)/$$(pkg)";
     done
   ```
 
   > 代码静态检查，策略与bugbye的检查相同。
 
 # GO 并发编程实战
+
+## 工具
+
+```shell
+go tool vet xx.go
+```
+
+> 静态检查，提早检测可能存在的并发错误
+
+```shell
+go test -race 
+go run -race 
+go build -race 
+go install -race 
+```
+
+> 数据静态检测
+
+```go
+goleak.VerifyNone(t)
+```
+
+> 检查内存泄露
+
+```go
+perfm
+fperf
+```
+
+> 压测
+
+## channel
+
+> 同步信号
+>
+> 消息传递
+>
+> 互斥
+
+### 实现
+
+```go
+type hchan struct {
+	qcount   uint           // 队列中的总数据
+	dataqsiz uint           // 循环队列的大小
+	buf      unsafe.Pointer // 指向dataqsiz元素的数组
+	elemsize uint16
+	closed   uint32
+	elemtype *_type // 元素类型
+	sendx    uint   // send index
+	recvx    uint   // receive index
+	recvq    waitq  // list of recv waiters
+	sendq    waitq  // list of send waiters
+
+	// 锁保护hchan中的所有字段以及多个字段
+  // s的字段被阻塞在这个频道上。
+	//
+
+	// 持有此锁时，不要更改其他G的状态
+	//（尤其是，不要准备G），因为这可能会导致死锁
+	// 跟随堆栈的收缩。
+	lock mutex
+}
+
+type waitq struct {
+	first *sudog
+	last  *sudog
+}
+```
+
+> mutex：保护所有数据结构，但是有些 quick path 场景下不必加锁。
+>
+> sudog：dequeue 中等待的 groutine 以及它的数据存储。
+>
+> close：标记 channel 已经关闭。
+>
+> sendq / recvq：ring buffer 相关。 环形buffer。
+>
+> qcount：数据总数
+
+<img src="./imgs/channel实现.png" style="zoom:50%;" />
+
+- **Channel Send**
+
+  > <img src="./imgs/Channel Send.png" style="zoom:50%;" />
+
+  - channel没有满且没有等待者：写入。
+  - channel满了：放入到sendq，并 park 自己直到自己可以发送数据。「将调度时间片让出去」。
+
+- **Channel Receive**
+
+  > <img src="./imgs/Channel Receive.png" style="zoom:50%;" />
+
+  - 如果已经关闭立即返回。
+  - 发送时 如果 recvq有等待的 sudug，立即将数据 copy 到对应的 sudug 并唤醒；同理 receive 处理 sendq 即可接收。
+
+### 常见错误
+
+- 误用 channel 导致阻塞。
+- 消费者、生产者不匹配 or 未正确同步。
+- 误用 closed channel。
+
+## defer
+
+- defer 声明时刻即参数解析时刻
+
+  > defer会对表达式进行提前求值，更合适的方式是defer + 闭包。
+
+- defer 执行结果为 filo 先进后出。
+
+- defer 中可以访问程序内部变量，但是不可修改返回值。
+
+  > 不要尝试在defer里对函数返回值做修改，这种修改是不符合预期的。
+
+## Mutex / RWMutex
+
+> 配套使用 lock、unlock。
+>
+> 运行时离开当前逻辑就释放锁。
+>
+> 锁的力度越小越好，加锁后尽快释放锁。
+>
+> 没有特殊原因，尽量不用 defer 释放锁。
+>
+> RWMutex 不要嵌套使用。
+
+<img src="./imgs/Mutex.png" style="zoom:50%;" />
+
+> - **信号量 Semaphore**
+>
+>   - p元语：acquire，阻塞
+>   - v元语：release，唤醒
+>
+> - **Mutex 特性**
+>
+>   > 互斥性
+>   >
+>   > 公平调度，饥饿处理
+>
+> - **RWMutex 特性**
+>
+>   > 不可递归调用
+>   >
+>   > 读写互斥，多读并发
+
+### Lock实现
+
+<img src="./imgs/锁实现.png" style="zoom:50%;" />
+
+> 第一个阶段
+>
+> 1. fasepath：是否可以直接获取锁。
+> 2. 判断是否饥饿，是否需要自旋。
+> 3. 根据新状态放入队列，主动阻塞
+>
+> 第二个阶段
+>
+> 1. 被动唤醒，计算饥饿状态。
+> 2. 饥饿模式：设置状态后获取锁。
+> 3. 非饥饿，循环抢占锁。
+
+### Unlock实现
+
+<img src="./imgs/unlock.png" style="unlock.png" />
+
+> 1. Fastpath：直接解锁。
+>
+> 2. 判断饥饿模式：唤醒饥饿线程。
+> 3. 正常模式：如果没有其他 goroutine 正在处理，则设置状态后唤醒线程。
+
+## map / sync.Map
+
+### map
+
+<img src="./imgs/sync.map.png" style="zoom:50%;" />
+
+> - 非线程安全。
+> - hash算法：aes。
+> - 冲突解决：链地址法。每个桶的大小是 8。
+> - range：实现上故意添加了random。
+> - 装填因子：6.5。
+> - rehash：渐进式rehash【类似redis】。
+
+解决方式：map + RWMutex
+
+### sync.Map
+
+```go
+type Map struct {
+	mu Mutex
+	read atomic.Value // readOnly
+	dirty map[interface{}]*entry
+	misses int
+}
+```
+
+> 1. 通过read和dirty两个字段读写分离，读取时会先查询read，不存在再查询dirty，写入时则只写入dirty。【是指针，并非两块儿内存】
+> 2. 读取read不需要加锁，而读或写 dirty 都需要加锁。
+> 3. 另外有 misses 字段来统计 read 被穿透的次数，超过一定次数，将dirty同步到 read 上。
+> 4. 对于删除数据则通过标记来延迟删除。
+
+#### 实现
+
+<img src="./imgs/syncmap实现.png" style="zoom:50%;" />
+
+- **Store**：存入dirty。
+- **Load**：尝试读read，没有则dirty。
+- **Delete**：类似load，标记删除。
+
+### 区别
+
+**适合sync.Map的场景**
+
+- 少写、多度：cache。
+- 并发读写的key无冲突。
+
+**适合 map + RWMutex 的场景**
+
+- 高并发读写场景。
+
+## sync.Once
+
+> Once 逻辑 panic 掉后，也会认为已经执行过了。
+
+```go
+type Once struct {
+	done uint32
+  m    Mutex
+}
+```
+
+> Atomic 原子操作做标记。
+>
+> double check 方式。
+
+## sync.WaitGroup
+
+- **用法**
+
+  > 等待一组goroutine完成。
+  >
+  > add 可以是负值，如果计数器小于0，panic。
+  >
+  > 当计数器为0时，阻塞在wait方法的 goroutine都会被释放。
+  >
+  > waitgroup可以重用。
+
+- **注意点**
+
+  > 统一add，分别done，避免尚未add就wait。wait过程中add会panic。
+  >
+  > 不能将计数器设置为负数，否则会发生panic，例如：add负数、done调用次数多于总数。
+  >
+  > wait还没结束就重用 waitGroup；waitGroup可以重用，但需要上一批goroutine都调用wait完毕后，才能继续重用waitGroup。
+
+```go
+type WaitGroup struct {
+  noCopy noCopy
+  state1 [3]uint32
+}
+```
+
+> noCopy：指示编译器检查 copy
+>
+> add：原子操作修改waiter数量。
+>
+> done：等同add -1
+>
+> wait：存储在waiter中，通过p元语阻塞，等待counter打到条件后，调用v元语唤醒。
+
+## shadow变量
+
+> - 相同代码包不同作用域的同名方法、变量存在遮蔽。
+> - 内嵌类型和被内嵌类型之前定力的同名方法、属性存在遮蔽。
+
+**注意**
+
+- 不要在嵌套代码块内使用短变量声明。
+- 一定要用的话，尽早退出。
+- 至少有一个新变量时，外部定义。
+- 关注 import . 时的名字遮蔽问题。
+- 谨慎使用 if foo,err := do(); err !=nil {} 这类语句。
