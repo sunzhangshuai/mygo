@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/html"
 	"io"
 	"log"
-	"net/http"
+	http "net/http"
 	"net/url"
 	"os"
 	"path"

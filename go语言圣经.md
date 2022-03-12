@@ -161,7 +161,7 @@ for {
 
 
      - **省略初始化表达式**：用**零值**初始化该变量。*零值初始化机制可以确保每个声明的变量总是有一个良好定义的值*。
-
+    
        >数值类型：0。
        >
        >布尔类型：false。
@@ -594,6 +594,7 @@ func name(parameter-list) (result-list) {
 >         - ture表示成功从channels接收到值。
 >         - false表示channels已经被关闭并且里面没有值可接收。
 > - range：当channel被关闭并且没有值可接收时跳出循环。
+> - 广播：不要向channel发送值，而是用关闭一个channel来进行广播。
 
 - **不带缓存的Channels**
 

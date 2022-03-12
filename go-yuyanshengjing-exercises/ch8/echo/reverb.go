@@ -1,4 +1,4 @@
-package task8
+package echo
 
 import (
 	"bufio"
