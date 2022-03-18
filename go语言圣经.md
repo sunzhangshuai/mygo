@@ -361,6 +361,294 @@ type 类型名字 底层类型
 > - **控制流标号**：就是 `break`、`continue` 或 `goto` 语句后面跟着的那种标号，则是函数级的作用域。
 > - 编译器遇到一个名字引用时，它会对其定义进行查找，查找过程从最内层的词法域向全局的作用域进行。如果查找失败，则报告“未声明的名字”这样的错误。如果该名字在内部和外部的块分别声明过，则内部块的声明首先被找到。
 
+# 数据类型
+
+> Go语言的数值类型包括几种不同大小的整数、浮点数和复数。每种数值类型都决定了对应的大小范围和是否支持正负符号。
+
+## 整型
+
+> int8、int16、int32、int6 对应 8、16、32、64bit 大小的有符号整数。
+>
+> uint8、uint16、uint32、uint64 对应 8、16、32、64bit 大小的无符号整数。
+>
+> int和uint 对应 特定CPU平台机器字大小的有符号和无符号整数。
+
+- **Unicode字符rune类型和int32等价**：通常用于表示一个Unicode码点。这两个名称可以互换使用。
+- **byte和uint8类型等价**：一般用于强调数值是一个原始的数据而不是一个小的整数。
+- **uintptr**：没有指定具体的bit大小但是足以容纳指针。只有在底层编程时才需要。
+- **互转**：需要显式的类型转换操作。
+- **溢出**：计算结果溢出，超出的高位的bit位部分将被丢弃。
+- **比较**：布尔型、数字类型和字符串等基本类型都是可**比较**的。还可以根据比较结果**排序**。
+- **无符号数**：只有在位运算或其它特殊的运算场景才会使用，就像bit集合、分析二进制文件格式或者是哈希和加密操作等。它们通常**并不用于仅仅是表达非负数**的场合。
+- **改变数值或丢精度**：一个大尺寸的整数类型转为一个小尺寸的整数类型。
+  - 浮点数到整数的转换将丢失任何小数部分，然后向数轴零方向截断。
+- **进制**：
+  - **八进制**：0；通常用于POSIX操作系统上的文件访问权限标志，
+  - **十六进制**：0x；强调数字值的bit位模式。
+
+## 浮点数
+
+> float32
+>
+> - 最大数值：math.MaxFloat32，大约是 3.4e38。
+> - 最小数值：1.4e-45。
+>
+> float64
+>
+> - 最大数值：math.MaxFloat64，大约是1.8e308。
+> - 最小数值：4.9e-324。
+
+- **NaN非数**：表示无效的除法操作结果`0/0或Sqrt(-1)`。
+
+- **无穷大**：
+
+  - *uvnan*：正无穷大。表示太大溢出的数字。
+  - *uvneginf*：负无穷大。表示除零的结果。
+  - Math.IsInf：判断是不是无穷大。
+
+- **不唯一**：在浮点数中，NaN、正无穷大和负无穷大都不是唯一的。
+
+  > 不可以用相等比较。
+
+## 复数
+
+> complex64和complex128，分别对应float32和float64两种浮点数精度。
+
+```go
+x := 1 + 2i
+y := 3 + 4i
+```
+
+> 写法
+
+## 布尔型
+
+一个布尔类型的值只有两种：true和false。
+
+**短路行为**：如果运算符左边值已经可以确定整个布尔表达式的值，那么运算符右边的值将不再被求值。
+
+## 字符串
+
+- **不可变**：一个字符串是一个不可改变的字节序列。修改字符串内部数据的操作也是被禁止的。
+
+  > s[0] = 'L'。
+
+- **panic**：访问超出字符串索引范围的字节。
+
+- **字节&字符**：第i个字节并不一定是字符串的第i个字符，因为对于非ASCII字符的UTF8编码会要两个或多个字节。
+
+### 字符串面值
+
+> ```
+> \a      响铃
+> \b      退格
+> \f      换页
+> \n      换行
+> \r      回车
+> \t      制表符
+> \v      垂直制表符
+> \'      单引号（只用在 '\'' 形式的rune符号面值中）
+> \"      双引号（只用在 "..." 形式的字符串面值中）
+> \\      反斜杠
+> ```
+>
+> Unicode码点。
+
+- **原生**：一个原生的字符串面值形式是\`...`，使用反引号代替双引号。在原生的字符串面值中，没有转义操作。
+
+  > 原生字符串面值用于编写正则表达式会很方便，因为正则表达式往往会包含很多反斜杠。
+  >
+  > 广泛应用于HTML模板、JSON面值、命令行提示信息、那些需要扩展到多行的场景。
+
+- **Unicode**：收集了这个世界上所有的符号系统，包括重音符号和其它变音符号，制表符和回车符，还有很多神秘的符号，每个符号都分配一个唯一的Unicode码点，Unicode码点对应Go语言中的rune整数类型。
+
+- **UTF-8**：UTF8是一个将Unicode码点编码为字节序列的变长编码。
+
+  > ASCII部分字符只使用1个字节，常用字符部分使用2或3个字节表示。
+  >
+  > **unicode/utf8**包则提供了用于rune字符序列的UTF8编码和解码的功能。
+
+  - *前缀、后缀、子串*：我们可以不用解码直接测试一个字符串是否是另一个字符串的前缀等。
+
+  - *UTF8解码器*
+
+    > ```go
+    > s := "Hello, 世界"
+    > 
+    > utf8.RuneCountInString(s)
+    > for i := 0; i < len(s); {
+    >     r, size := utf8.DecodeRuneInString(s[i:])
+    > }
+    > ```
+
+  - *循环统计字符串中字符的数目*
+
+    > ```go
+    > n := 0
+    > for range s {
+    >     n++
+    > }
+    > ```
+
+  - *错误*：遇到一个错误的UTF8编码输入，将生成一个特别的Unicode字符`\uFFFD`，在印刷中这个符号通常是�。
+
+  - *转换*
+
+    > 将[]rune类型的Unicode字符slice或数组转为string，则对它们进行UTF8编码。
+    >
+    > 将整数转型为字符串意思是生成以只包含对应Unicode码点字符的UTF8字符串。
+
+### 字符串和Byte切片
+
+> - strings包提供了许多如字符串的查询、替换、比较、截断、拆分和合并等功能。
+>
+> - bytes包也提供了很多类似功能的函数，但是针对和字符串有着相同结构的[]byte类型。
+>
+> - strconv包提供了布尔型、整型数、浮点数和对应字符串的相互转换，还提供了双引号转义相关的转换。
+>
+> - unicode包提供了IsDigit、IsLetter、IsUpper和IsLower等类似功能，它们用于给字符分类。
+>
+> - path和path/filepath包提供了关于文件路径名更一般的函数操作。
+
+```go
+[]byte(s)
+```
+
+> 分配了一个新的字节数组用于保存字符串数据的拷贝，然后引用这个底层的字节数组。
+
+## 常量
+
+- **计算**：常量表达式的值在编译期计算，而不是在运行期。
+
+  > 常量间的所有算术运算、逻辑运算和比较运算的结果也是常量。
+
+- **缺省**：批量声明的常量。
+
+  ```go
+  const (
+      a = 1
+      b
+      c = 2
+      d
+  )
+  ```
+
+  > 除了第一个外其它的常量右边的初始化表达式都可以省略。
+  >
+  > 省略表示使用前面常量的初始化表达式写法，对应的常量类型也一样的。
+
+### iota 常量生成器
+
+在一个const声明语句中，在第一个声明的常量所在的行，iota将会被置为0，然后在每一个有常量声明的行加一。
+
+```go
+const (
+    Sunday Weekday = iota
+    Monday
+    Tuesday
+    Wednesday
+    Thursday
+    Friday
+    Saturday
+)
+
+const (
+    FlagUp Flags = 1 << iota // is up
+    FlagBroadcast            // supports broadcast access capability
+    FlagLoopback             // is a loopback interface
+    FlagPointToPoint         // belongs to a point-to-point link
+    FlagMulticast            // supports multicast access capability
+)
+```
+
+### 无类型常量
+
+1. 编译器为这些没有明确基础类型的数字常量提供比基础类型更高精度的算术运算；你可以认为至少有256bit的运算精度。
+2. 有六种未明确类型的常量类型，分别是无类型的布尔型、无类型的整数、无类型的字符、无类型的浮点数、无类型的复数、无类型的字符串。
+
+## 数组
+
+- **元素**：由固定长度的特定类型元素组成的序列，一个数组可以由零个或多个元素组成。
+
+- **默认值**：数组的每个元素都被初始化为元素类型对应的零值。
+
+- **长度缺省**：如果在数组的长度位置出现的是 `...` 省略号，则表示数组的长度是根据初始化值的个数来计算。
+
+  ```go
+  q := [...]int{1, 2, 3}
+  fmt.Printf("%T\n", q) // "[3]int"
+  ```
+
+- **类型**：数组的长度是数组类型的一个组成部分，因此[3]int和[4]int是两种不同的数组类型。
+
+- **长度**：长度必须是常量表达式，因为数组的长度需要在编译阶段确定。
+
+- **其他写法**
+
+  > ```go
+  > const (
+  >     USD Currency = iota // 美元
+  >     EUR                 // 欧元
+  >     GBP                 // 英镑
+  >     RMB                 // 人民币
+  > )
+  > symbol := [...]string{USD: "$", EUR: "€", GBP: "￡", RMB: "￥"}
+  > 
+  > r := [...]int{99: -1}
+  > ```
+
+- **比较**：如果一个数组的元素类型是可以相互比较的，那么数组类型也是可以相互比较的。当两个数组的所有元素都是相等的时候数组才是相等的。
+
+## Slice
+
+> 我们一般使用slice来替代数组。
+
+- **写法**：[]T，其中T代表slice中元素的类型。slice的语法和数组很像，只是没有固定长度而已。
+
+- **组成**：指针、长度和容量。
+
+- **共享**：多个slice之间可以共享底层的数据，并且引用的数组部分区间可能重叠。
+
+- **切片操作**：超出cap(s)的上限将导致一个panic异常，但是超出len(s)则是意味着扩展了slice，因为新slice的长度会变大。
+
+- **比较**：slice之间不能比较。可以用 `bytes.Equal` 函数比较字节型切片。
+
+  > 第一个原因，一个slice的元素是间接引用的，一个slice甚至可以包含自身。
+  >
+  > 第二个原因，因为slice的元素是间接引用的，一个固定的slice值（译注：指slice本身的值，不是元素的值）在不同的时刻可能包含不同的元素，因为底层数组的元素可能会被修改。
+
+- 一个零值的slice等于nil，空值的的slice不等于nil。
+
+### append函数
+
+> 用于向slice追加元素。
+
+检测底层数组是否有足够的容量
+
+- **有**：在原底层数组上扩展slice，新添加的元素复制到新扩展的空间，返回原来的指针。
+- **没有**：会先分配一个足够大的slice用于保存新的结果，返回新的底层数组指针。
+
+```go
+runes = append(runes, r)
+```
+
+> 我们也不能确认新的slice和原始的slice是否引用的是相同的底层数组空间。同样，我们不能确认在原先的slice上的操作是否会影响到新的slice。因此，通常是将append返回的结果直接赋值给输入的slice变量。
+
+```go
+x = append(x, 4, 5, 6)
+x = append(x, x...)
+```
+
+> append函数则可以追加多个元素，甚至追加一个slice。
+
+## Map
+
+## 结构体
+
+## json
+
+## 文本和HTML模板
+
 # 函数
 
 ## 函数声明
@@ -579,22 +867,54 @@ func name(parameter-list) (result-list) {
 >
 > `go` 语句会使其语句中的函数在一个新创建的goroutine中运行。
 
+## 动态栈
+
+> - 每一个OS线程都有**2MB的内存块**来做栈，这个栈用来存储正在被调用或挂起（指在调用其它函数时）的函数的内部变量。
+> - 一个goroutine会以一个很小的栈开始其生命周期，一般只需要2KB。保存其活跃或挂起的函数调用的本地变量。
+> - 一个goroutine的栈大小并不是固定的；栈的大小会根据需要动态地伸缩。最大值有1GB。
+
+## Goroutine调度
+
+- **上下文切换**：不需要进入内核的上下文，所以重新调度一个goroutine比调度一个线程**代价低得多**。
+- **m:n线程**：在n个操作系统线程上多工（调度）m个goroutine。
+- **休眠**：当Goroutine执行时间较长时，GO调度器会将其置为休眠。
+- **优势**：榨干cpu的油水，在一个线程中的goroutine阻塞时，不进行线程切换，直接执行另一个goroutine。
+
+## GOMAXPROCS
+
+- **默认值**：运行机器上的**CPU的核心数**。
+- **修改**
+  - **环境变量**：`GOMAXPROCS`
+  - **程序函数**：`runtime.GOMAXPROCS`
+
+## Goroutine没有ID号
+
+> goroutine没有可以被程序员获取到的身份（id）的概念。这一点是设计上故意而为之，由于thread-local storage总是会被滥用。
+
 # Channels
 
-> - channels是它们goroutine的通信机制。
-> - 每个channel都有一个特殊的类型，也就是channels可发送数据的类型。
-> - channel是**引用类型**。
-> - 一个channel有发送和接受两个主要操作，都是通信行为。发送和接收两个操作都使用`<-`运算符。
->   - 发送：channel对象 <- 值。
->   - 接收：值 <- channel对象。
->   - 关闭：close(channel对象)。
->     - 发送：导致panic异常。
->     - 接收：可以接收到之前已经成功发送的数据，空channel会接受到零值。
->       - 接收操作有一个变体形式：多接收一个结果，多接收的第二个结果是一个布尔值ok，
->         - ture表示成功从channels接收到值。
->         - false表示channels已经被关闭并且里面没有值可接收。
-> - range：当channel被关闭并且没有值可接收时跳出循环。
-> - 广播：不要向channel发送值，而是用关闭一个channel来进行广播。
+> - channels是它们goroutine的**通信机制**。
+>
+> - **类型**：每个channel都有一个特殊的类型，也就是channels可发送数据的类型。channel是**引用类型**。
+>
+> - **发送**：channel对象 <- 值
+>   
+> - **接收**：值 <- channel对象。
+>   
+> - **关闭**：close(channel)
+>   
+>   - **不需要关闭每一个channel**。只有当需要告诉接收者goroutine，所有的数据已经全部发送时才需要关闭channel。
+>   - **重复关闭**一个channel将导致**panic异常**；关闭一个nil值的channel也将导致**panic异常**。
+>   - **发送**将导致panic异常。
+>   - 可以**接收**到之前已经成功发送的数据，空channel会接受到零值。
+>   
+> - **range**
+>
+>   > 当channel被关闭并且没有值可接收时跳出循环。
+>
+> - **广播**
+>
+>   > 不要向channel发送值，而是用关闭一个channel来进行广播。
 
 - **不带缓存的Channels**
 
@@ -608,34 +928,40 @@ func name(parameter-list) (result-list) {
 
 - **串联的Channels（Pipeline）**
 
-  - Channels也可以用于将多个goroutine连接在一起，一个Channel的输出作为下一个Channel的输入。
-
-  - **不需要关闭每一个channel**。**只有**当需要告诉接收者goroutine，所有的数据已经全部发送时才需要关闭channel。
-
-  - 重复关闭一个channel将导致**panic异常**；关闭一个nil值的channel也将导致**panic异常**。
+  > Channels也可以用于将多个goroutine连接在一起，一个Channel的输出作为下一个Channel的输入。
 
 
 - **单方向的Channel**
 
-  - 类型 `chan<- int` ：表示一个只发送int的channel，只能发送不能接收。
+  - **只能发送**
 
-  - 类型 `<-chan int` ：表示一个只接收int的channel，只能接收不能发送。
+    ```go
+    chan<- [type]
+    ```
 
-  - 对一个只接收的channel调用close是一个编译错误。
+  - **只能接收**：
+
+    ```go
+    <-chan [type]
+    ```
+
+    **无法close**【编译错误】。
 
 - **带缓存的Channels**
 
-  - 带缓存的Channel内部持有一个元素队列。队列的最大容量在调用make函数时创建。
+  - **队列**：内部持有元素队列。**最大容量**在**make**时创建。
 
-  - 向缓存Channel的发送操作就是向内部缓存队列的尾部插入元素，接收操作则是从队列的头部删除元素。
+    > *发送*：尾部插入元素
+    >
+    > *接收*：头部删除元素
 
   - **cap函数**：获取channel内部缓存的容量。
 
   - **len函数**：获取内部缓存队列中有效元素的个数。
 
-  - Channel的缓存也可能影响程序的性能。
-
-  - 可用于做计数信号量。
+  - **性能**：缓存也可能影响程序的性能。
+  
+  - 可用于做**计数信号量**。
 
 
 ## sync.WaitGroup
@@ -659,15 +985,479 @@ select {
 }
 ```
 
-> - 多路复用。
->
-> - 每一个case代表一个通信操作。
->
-> - 一个接收表达式可能只包含接收表达式自身，或者包含在一个简短的变量声明中。
->
-> - select会等待case中有能够执行的case时去执行。当条件满足时，select才会去通信并执行case之后的语句；这时候其它通信是不会执行的。
->
-> - 如果多个case同时就绪时，select会随机地选择一个执行，这样来保证每一个channel都有平等的被select的机会。
->
-> - channel的零值是nil，对一个nil的channel发送和接收操作会永远阻塞。可以用nil来激活或者禁用case。来达成处理其它输入或输出事件时超时和取消的逻辑。
+- **多路复用**：每个case代表一个通信操作。
 
+- **接收表达式**：只包含接收表达式自身，或者包含在一个简短的变量声明中。
+
+- **case就绪**：通信并执行case之后的语句；这时候其它通信是不会执行的。
+
+- **多个case同时就绪**：随机地选择一个执行，每一个channel都有平等的机会。
+
+- **channel零值**：对一个nil的channel发送和接收操作会**永远阻塞**。
+
+  > 可以用nil来**激活**或者**禁用**case。来达成处理其它输入或输出事件时超时和取消的逻辑。
+
+# 共享变量
+
+## 竞争条件
+
+> 指的是程序在多个goroutine交叉执行操作时，没有给出正确的结果。
+
+- **非常恶劣**：非常难以复现而且难以分析诊断。
+
+- **数据竞争**：无论任何时候，只要有两个goroutine并发访问同一变量，且至少其中的一个是写操作的时候就会发生数据竞争。
+
+  > 根本就没有良性数据竞争。我们一定要避免数据竞争。
+
+  - *避免方式*
+
+    > - 不要去写变量：尽量能初始化解决。
+    > - 避免从多个goroutine访问变量。**不要使用共享数据来通信；使用通信来共享数据**
+    > - 允许很多goroutine去访问变量，但是在**同一个时刻最多只有一个**goroutine在访问。
+
+### 检测
+
+```shell
+go build -race
+go run -race
+go test -race
+```
+
+> 创建一个应用修改版，附带了能够记录所有运行期对共享变量访问工具的test。并且会记录下每一个读或者写共享变量的goroutine的身份信息。
+>
+> 工具会打印一份报告，内容包含变量身份，读取和写入的goroutine中活跃的函数的调用栈。这些信息在定位问题时通常很有用。
+>
+> 加了竞争检测的程序跑起来会**慢**一些，且需要**更大的内存**。
+
+## sync.Mutex
+
+- 如果可能的话**尽量使用defer**来将临界区扩展到函数的结束。
+
+- **不能重入**：没法对一个已经锁上的 mutex 来再次上锁——这会导致**程序死锁**。
+
+- **通用的解决方案**：将一个函数分离为多个函数
+
+  > 一个不导出的函数，这个函数假设锁总是会被保持并去做实际的操作。
+  >
+  > 一个导出的函数，调用不导出的函数，但在调用前会先去获取锁。
+  >
+  > ```go
+  > func Withdraw(amount int) bool {
+  >     mu.Lock()
+  >     defer mu.Unlock()
+  >     deposit(-amount)
+  >     if balance < 0 {
+  >         deposit(amount)
+  >         return false // insufficient funds
+  >     }
+  >     return true
+  > }
+  > 
+  > func Deposit(amount int) {
+  >     mu.Lock()
+  >     defer mu.Unlock()
+  >     deposit(amount)
+  > }
+  > 
+  > func Balance() int {
+  >     mu.Lock()
+  >     defer mu.Unlock()
+  >     return balance
+  > }
+  > 
+  > // This function requires that the lock be held.
+  > func deposit(amount int) { balance += amount }
+  > ```
+
+## sync.RWMutex
+
+- RLock只能在临界区共享变量**没有任何写入操作**时可用。
+- RWMutex只有当获得锁的大部分goroutine都是读操作，而锁在竞争条件下，也就是说，goroutine们必须等待才能获取到锁的时候，RWMutex才是最能带来好处的。
+- RWMutex需要更复杂的内部记录，**会比mutex慢一些**。
+
+## 内存同步
+
+```go
+var x, y int
+go func() {
+    x = 1 // A1
+    fmt.Print("y:", y, " ") // A2
+}()
+go func() {
+    y = 1                   // B1
+    fmt.Print("x:", x, " ") // B2
+}()
+```
+
+> 可能存在如下输出：
+>
+> ```go
+> x:0 y:0
+> y:0 x:0
+> ```
+>
+> 原因可能是：
+>
+> 1. 处理器本地缓存没来的及同步到主存，两个处理器看到的不一样。
+> 2. 指令重排序。
+>
+> 解决方案：
+>
+> 1. 将变量限制在goroutine内部。
+> 2. 使用互斥条件来访问。
+
+- 现代计算机中有一堆处理器，每一个都有其**本地缓存**「local cache」。为了效率，对内存的写入一般会在每一个处理器中缓冲，并在必要时一起flush到主存。
+- **channel通信**或者**互斥量操作** *原语* 会使处理器聚集写入flush并commit。
+
+## sync.Once
+
+```go
+func loadIcons() {
+    icons = map[string]image.Image{
+        "spades.png":   loadIcon("spades.png"),
+        "hearts.png":   loadIcon("hearts.png"),
+        "diamonds.png": loadIcon("diamonds.png"),
+        "clubs.png":    loadIcon("clubs.png"),
+    }
+}
+
+// NOTE: not concurrency-safe!
+func Icon(name string) image.Image {
+    if icons == nil {
+        loadIcons() // one-time initialization
+    }
+    return icons[name]
+}
+```
+
+> 因为缺少显式的同步，编译器和CPU是可以随意地去更改访问内存的指令顺序，以任意方式，只要保证每一个goroutine自己的执行顺序一致。
+>
+> ```go
+> func loadIcons() {
+>     icons = make(map[string]image.Image)
+>     icons["spades.png"] = loadIcon("spades.png")
+>     icons["hearts.png"] = loadIcon("hearts.png")
+>     icons["diamonds.png"] = loadIcon("diamonds.png")
+>     icons["clubs.png"] = loadIcon("clubs.png")
+> }
+> ```
+>
+> 这就导致一个初始化后的 goroutine 可能仍然读不到数据。
+
+- 使用互斥访问icons的代价就是没有办法对该变量进行并发访问。
+- **sync.Once**：解决这种一次性初始化的问题。
+- **RWMutex**：太复杂且容易出错。
+
+# 包
+
+> 每个包都定义一个不同的名字空间用于它内部的每个标识符的访问。
+>
+> 每个包还通过控制包内名字的可见性和是否导出来实现封装特性。
+>
+> 当我们修改了一个源文件，我们必须重新编译该源文件对应的包和所有依赖该包的其他包。
+
+- **编译速度快**
+
+  > 1. 所有导入的包必须在每个文件的开头**显式声明**，编译器就有必要读取和分析整个源文件来判断包的依赖关系。
+  > 2. 禁止包的**环状依赖**，包的依赖关系是一个有向无环图，每个包可以被独立编译，而且很可能是被**并发编译**。
+  > 3. 编译后包的目标文件不仅仅记录包本身的导出信息，目标文件同时还记录了包的依赖关系。因此，在编译一个包的时候，编译器只需要读取每个直接导入包的目标文件，而不需要遍历所有依赖的的文件。
+
+- **导入路径**
+
+  > 如果你计划分享或发布包，那么导入路径最好是全球唯一的。为了避免冲突，所有非标准库包的导入路径建议以所在组织的互联网域名为前缀；而且这样也有利于包的检索。
+
+- **包声明**
+
+  > 1. 在每个Go语言源文件的开头都必须有包声明语句。包声明语句的主要目的是确定当前包被其它包导入时默认的标识符（也称为包名）。
+  > 2. 默认的包名就是包导入路径名的最后一段。
+  > 3. 有三种**例外**
+  >    1. 包对应一个可执行程序，也就是main包，这时候main包本身的导入路径是无关紧要的。
+  >    2. 包所在的目录中可能有一些文件名是以`_test.go`为后缀的Go源文件（译注：前面必须有其它的字符，因为以`_`或`.`开头的源文件会被构建工具忽略）。
+  >    3. 一些依赖版本号的管理工具会在导入路径后追加版本号信息。
+
+- **导入声明**
+
+  > 1. **导入包的重命名**：同时导入两个名字相同的包，例如math/rand包和crypto/rand包，那么导入声明必须至少为一个同名包指定一个新的包名以避免冲突。
+  >    1. 导入包的重命名只影响当前的源文件。
+  >    2. 简短名称会更方便。选择用简短名称重命名导入包时候**最好统一**。
+  >    3. 帮助避免和本地普通变量名产生冲突。
+  > 2. 每个导入声明语句都明确指定了当前包和被导入包之间的依赖关系。
+
+- **匿名导入**
+
+  > 1. 导入一个包而并不使用导入的包将会导致一个编译错误。可以用下划线`_`来重命名导入的包。
+  > 2. 只计算包级变量的初始化表达式和执行导入包的init初始化函数。
+
+- **包和命名**
+
+  > 1. 一般要用短小的包名，但也不能太短导致难以理解。
+  > 2. 尽可能让命名有描述性且无歧义。
+  > 3. 包名一般采用单数的形式。
+  > 4. 要避免包名有其它的含义。
+  > 5. 当设计一个包的时候，需要考虑包名和成员名两个部分如何很好地配合。
+  > 6. 包中最重要的成员名字要简单明了。
+
+## 工具
+
+```shell
+build            编译包和依赖项
+clean            删除对象文件
+doc              显示包或符号的文档
+env              打印go环境信息
+fmt              在包源上运行gofmt
+get              下载并安装软件包和依赖项
+install          编译并安装软件包和依赖项
+list             列出包
+run              编译并运行Go程序
+test             测试包
+version          打印go版本信息
+vet              在软件包上运行go tool vet
+```
+
+- **工作区结构**
+
+  - *GOPATH*：指定当前工作目录。
+
+    > - src子目录用于存储源代码。
+    >
+    > - pkg子目录用于保存编译后的包的目标文件。
+    > - bin子目录用于保存编译后的可执行程序。
+
+  - *GOROOT*：指定Go的安装目录，还有它自带的标准库包的位置。
+
+- **下载包**
+
+  - `go get`可以下载一个单一的包或者用`...`下载整个子目录里面的每个包。
+
+  - 一旦`go get`命令下载了包，然后就是安装包或包对应的可执行的程序。
+
+  - `go get`命令支持当前流行的托管网站GitHub、Bitbucket和Launchpad，可以直接向它们的版本控制系统请求代码。
+
+  - `go get`命令获取的代码是真实的本地存储仓库，而不仅仅只是复制源文件，因此你依然可以使用版本管理工具比较本地代码的变更或者切换到其它的版本。
+
+  - 如果指定`-u`命令行标志参数，`go get`命令将确保所有的包和依赖的包的版本都是最新的，然后重新编译和安装它们。如果不包含该标志参数的话，而且如果包已经在本地存在，那么代码将不会被自动更新。
+
+  - 导入路径含有的网站域名和本地Git仓库对应远程服务地址并不相同。
+
+    ```html
+    <meta name="go-import" content="golang.org/x/net git https://go.googlesource.com/net">
+    ```
+
+- **构建包**
+
+  - `go build`命令编译命令行参数指定的每个包。
+    - **包是库**：则**忽略输出结果**；这可以用于**检测**包是可以**正确编译**的。
+    - **包名字是main**：`go build`调用链接器在当前目录创建一个可执行程序；以导入路径的最后一段作为可执行程序的名字。
+    - `go build`：构建指定的包和它依赖的包，然后丢弃除了最后的可执行文件之外所有的中间编译结果。
+    - `go install`：和`go build`命令很相似，但是它会保存每个包的编译成果，而不是将它们都丢弃。被编译的包会被保存到$GOPATH/pkg目录下，目录路径和 src目录路径对应，可执行程序被保存到$GOPATH/bin目录。
+    - `go build -i`：将安装每个目标所依赖的包。
+  - *指定包*
+    - 绝对路径。
+    - 相对路径，必须以`.`或`..`开头。
+    - 不指定，当前目录对应的包。
+
+- **包文档**
+
+  > Go语言中的文档注释一般是完整的句子。
+  >
+  > 1. 第一行通常是摘要说明，以被注释者的名字开头。
+  > 2. 注释中**函数参数**或**其它标识符**并不需要额外的引号或其它标记注明。
+  >
+  > 如果包的注释内容比较长，一般会放到一个独立的源文件中。
+
+  - *go doc*：打印其后所指定的实体的声明与文档注释。
+
+    > 并不需要输入完整的包导入路径或正确的大小写。
+
+    - ```shell
+      go doc time
+      ```
+
+      >包
+      >
+      >```shell
+      >package time // import "time"
+      >
+      >Package time provides functionality for measuring and displaying time.
+      >
+      >const Nanosecond Duration = 1 ...
+      >func After(d Duration) <-chan Time
+      >func Sleep(d Duration)
+      >func Since(t Time) Duration
+      >func Now() Time
+      >type Duration int64
+      >type Time struct { ... }
+      >...many more...
+      >```
+
+    - ```shell
+      go doc time.Since
+      ```
+
+      > 包成员
+      >
+      > ```shell
+      > func Since(t Time) Duration
+      > 
+      >     Since returns the time elapsed since t.
+      >     It is shorthand for time.Now().Sub(t).
+      > ```
+
+    - ```shell
+      go doc time.Duration.Seconds
+      ```
+
+      > 方法
+      >
+      > ```shell
+      > func (d Duration) Seconds() float64
+      > 
+      >     Seconds returns the duration as a floating-point number of seconds.
+      > ```
+
+  - *godoc*
+
+    > 运行：`godoc -http :8000`。
+    >
+    > 查看：`http://localhost:8000/pkg`
+
+- **内部包**
+
+  > **internal包**：包含**internal**名字的路径段的包，Go语言的构建工具其做了特殊处理。
+  >
+  > **导入**：只能被和internal目录有**同一个父目录**的包所导入。
+
+  - *eg.* 
+
+    > net/http/internal/chunked内部包只能被net/http/httputil或net/http包导入，但是不能被net/url包导入。不过net/url包却可以导入net/http/httputil包。
+
+- **查询包**
+
+  > go list
+
+  - *测试包是否在工作区并打印它的导入路径*
+
+    ```shell
+    go list github.com/go-sql-driver/mysql
+    ```
+
+    > ```shell
+    > github.com/go-sql-driver/mysql
+    > ```
+
+  - *特定子目录下的所有包*
+
+    ```shell
+    go list gopl.io/ch3/...
+    ```
+
+    > ```shell
+    > gopl.io/ch3/basename1
+    > gopl.io/ch3/basename2
+    > gopl.io/ch3/comma
+    > gopl.io/ch3/mandelbrot
+    > gopl.io/ch3/netflag
+    > gopl.io/ch3/printints
+    > gopl.io/ch3/surface
+    > ```
+
+  - *和某个主题相关的所有包*
+
+    ```shell
+    go list ...xml...
+    ```
+
+    > ```shell
+    > encoding/xml
+    > gopl.io/ch7/xmlselect
+    > ```
+
+  - *获取每个包完整的元信息，不仅仅只是导入路径*
+
+    - **JSON格式打印每个包的元信息**
+
+      ```shell
+      go list -json hash
+      ```
+
+      > ```shell
+      > {
+      >     "Dir": "/home/gopher/go/src/hash",
+      >     "ImportPath": "hash",
+      >     "Name": "hash",
+      >     "Doc": "Package hash provides interfaces for hash functions.",
+      >     "Target": "/home/gopher/go/pkg/darwin_amd64/hash.a",
+      >     "Goroot": true,
+      >     "Standard": true,
+      >     "Root": "/home/gopher/go",
+      >     "GoFiles": [
+      >             "hash.go"
+      >     ],
+      >     "Imports": [
+      >         "io"
+      >     ],
+      >     "Deps": [
+      >         "errors",
+      >         "io",
+      >         "runtime",
+      >         "sync",
+      >         "sync/atomic",
+      >         "unsafe"
+      >     ]
+      > }
+      > ```
+
+    - **用户使用text/template包的模板语言定义输出文本的格式**
+
+      ```shell
+      go list -f '{{join .Deps " "}}' strconv
+      ```
+
+      > ```shell
+      > go list -f "{{join .Deps \" \"}}" strconv
+      > ```
+
+# 反射
+
+> 需要反射的原因：没有办法来检查未知类型的表示方式。
+
+## reflect.Type
+
+> reflect.TypeOf 返回的是一个动态类型的接口值，它总是返回具体的类型。
+>
+> fmt.Printf 提供了一个缩写 %T 参数，内部使用 reflect.TypeOf 来输出。
+
+```go
+t := reflect.TypeOf(3)  // a reflect.Type
+fmt.Println(t.String()) // "int"
+fmt.Println(t)          // "int"
+```
+
+```go
+var w io.Writer = os.Stdout
+fmt.Println(reflect.TypeOf(w)) // "*os.File"
+```
+
+
+
+## reflect.Value
+
+> reflect.ValueOf 返回的结果也是具体的类型。
+>
+> 除非 Value 持有的是字符串，否则 String 方法只返回其类型。
+>
+> **使用 fmt 包的 %v 标志参数会对 reflect.Values 特殊处理**。
+
+- **reflect.Value.Interface**
+
+  > reflect.ValueOf 的逆操作，返回一个 interface{} 类型。
+
+- **reflect.Value.Kind**
+
+  > 类型是有限的。Kind 只关心底层表示，可以解放 *switch*。
+  >
+  > - Bool、String 和 所有数字类型的基础类型。
+  > - Array 和 Struct 对应的聚合类型。
+  > - Chan、Func、Ptr、Slice 和 Map 对应的引用类型。
+  > - interface 类型。
+  > - 还有表示空值的 Invalid 类型。（空的 reflect.Value 的 kind 即为 Invalid。）

@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"runtime"
 	"sync"
-	"time"
 )
 
 const (
@@ -25,11 +23,7 @@ func surface(f io.Writer) {
 		"style='stroke: grey; fill: white; stroke-width: 0.7' "+
 		"width='%d' height='%d'>", width, height)
 	var wg sync.WaitGroup
-	fmt.Println(runtime.NumCPU())       // 返回当前CPU内核数
-	fmt.Println(runtime.GOMAXPROCS(2))  // 设置运行时最大可执行CPU数
-	fmt.Println(runtime.NumGoroutine()) // 当前正在运行的goroutine 数
 	ch := make(chan struct{}, 8)
-	start := time.Now()
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
 			ch <- struct{}{}
@@ -45,7 +39,6 @@ func surface(f io.Writer) {
 		wg.Wait()
 		fmt.Println("done")
 	}()
-	fmt.Printf("time: %s\n", time.Now().Sub(start).String())
 	fmt.Fprintf(f, "</svg>")
 }
 

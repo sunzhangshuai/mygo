@@ -6,7 +6,7 @@ var testNum uint64 = 100000000
 
 func BenchmarkExercises_PopCount(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		popCount(testNum)
+		PopCount(testNum)
 	}
 }
 

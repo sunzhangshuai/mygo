@@ -1549,3 +1549,166 @@ type WaitGroup struct {
 - 至少有一个新变量时，外部定义。
 - 关注 import . 时的名字遮蔽问题。
 - 谨慎使用 if foo,err := do(); err !=nil {} 这类语句。
+
+# 选项模式传递参数
+
+- **方式1**：逐个参数传递。
+
+  - *优势*：简单明了。
+
+  - *缺点*
+
+    > 1. 新添加了一个参数，函数签名发生变化。
+    >
+    >    ```go
+    >    func NewMySQL(a TypeA,b TypeB,c TypeC,d TypeD)MySQL
+    >    ```
+    >
+    > 2. 或者原函数不修改，而添加一个新的函数。
+    >
+    >    ```go
+    >    func NewMySQL2(a TypeA,b TypeB,c TypeC,d TypeD)MySQL
+    >    ```
+    >
+    > 3. 或者最后的一个参数变成可变参数。
+    >
+    >    ```go
+    >    func NewMySQL(a TypeA,b TypeB,c TypeC,d TypeD…)MySQL
+    >    func NewMySQL(a TypeA,b TypeB,c TypeC,ps interface{}…)MySQL
+    >    ```
+    >
+    >    
+
+- **方式2**：传递一个struct
+
+  - *优势*：只需要修改struct定义，添加新的字段即可，而且函数签名也不会发生变化。
+
+  - *缺点*
+
+    > 参数的默认值不好判断。
+    >
+    > 解法：
+    >
+    > ```go
+    > Type Params struct{
+    >     A *int
+    >     B *string
+    > }
+    > ```
+    >
+    > 通过nil判断默认值。
+
+## 具体方案
+
+```go
+// Option 定义的选项类型
+type Option interface{
+  apply(do * mysqlOptions)
+}
+
+// 也可以不定义成interface,而定义为一个func
+//  比如 type Option func(do * mysqlOptions)
+type mysqlOptions struct{
+  readTimeout int
+  writeTimeout int
+}
+
+func NewMySQL(opts …Option)MySQL{
+  // 默认值
+  opt:=& mysqlOptions{
+    readTimeout:100,
+    writeTimeout:50,
+  }
+
+  // 传入的选项将默认值替换掉
+  for _,o:=range opts{
+    o. apply(opt)
+  }
+
+  // go on
+}
+```
+
+```go
+// 先定义一个模板，方便后续声明新的option
+type funcsOptionTPL struct {
+  f func(*mysqlOptions)
+}
+
+func (fdo *funcsOptionTPL) apply(do *mysqlOptions) {
+  fdo.f(do)
+}
+
+func newFuncOption(f func(*mysqlOptions)) *funcsOptionTPL {
+  return &funcsOptionTPL{
+    f: f,
+  }
+}
+
+// 定义一个设置ReadTimeout的Option
+func OptReadTimeout(t int) Option{
+  return newFuncOption(func(opts *mysqlOptions) {
+    opts.readTimeout=t
+  })
+}
+
+// 定义一个设置WriteTimeout的Option
+func OptWriteTimeout(t int) Option{
+  return newFuncOption(func(opts *mysqlOptions) {
+    opts.writeTimeout=t
+  })
+}
+```
+
+```go
+// 方式1：使用缺省参数初始化
+client：=NewMySQL()
+
+
+// 方式2：传入option初始化
+Client:=NewMySQL(OptReadTimeout(50),OptWriteTimeout(200))
+```
+
+# 提升go在容器中的运行效率
+
+- Go 的 runtime 会自动的设置其 GOMAXPROCS 值为运行机器环境的CPU逻辑核数。
+
+- 在物理机多容器混部时会出现一个问题，运行在容器里的程序，每个程序都认为它是独享整台物理机的
+
+  > ![](./imgs/容器中的线程.png)
+
+## 解决方案
+
+容器提供环境变量。写一个匿名包进行 GOMAXPROCS 更新。
+
+```go
+// Get 获取灯塔容器可用cpu数量示例
+func Get() (num int, err error) {
+  coreNumStr := os.Getenv("MATRIX_RESOURCE_CPU_PHYSICAL_CORES")
+  if coreNumStr == "" {
+    return 0, fmt.Errorf("os.Getenv cpu num with empty value")
+  }
+  coreNum, _ := strconv.ParseFloat(coreNumStr, 32)
+  if coreNum <= 0 {
+    return 0, fmt.Errorf("os.Getenv cpu num with err value, coreNumStr: %s", coreNumStr)
+  }
+  // 四舍五入，最小值为1
+  return int(math.Max(1, math.Round(coreNum))), nil
+}
+
+// Set 设置灯塔容器可用cpu数量示例
+// Set 设置GOMAXPROCS值
+// 若环境变量GOMAXPROCS有值将不进行设置（go自己会使用该值）
+func Set(num int) (cpuNum int, ok bool) {
+  if os.Getenv("GOMAXPROCS") != "" {
+    return runtime.GOMAXPROCS(-1), false
+  }
+  return runtime.GOMAXPROCS(num), num >= 1
+}
+```
+
+# GO编程模式
+
+## 包装错误
+
+三方库：`github.com/pkg/errors`

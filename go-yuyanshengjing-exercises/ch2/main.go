@@ -1,11 +1,12 @@
 package ch2
 
 import (
-	"exercises/ch2/tempconv"
-	"exercises/ch2/unitconv"
 	"fmt"
 	"os"
 	"strconv"
+
+	"exercises/ch2/tempconv"
+	"exercises/ch2/unitconv"
 )
 
 // Exercises 练习
@@ -15,13 +16,14 @@ type Exercises struct {
 // pc[i] is the population count of i.
 var pc = func() (pc [256]byte) {
 	for i := range pc {
-		pc[i] = pc[i/2] + byte(i&1)
+		// 右移一位的数字已经统计过了，看看最低位是不是1。
+		pc[i] = pc[i>>1] + byte(i&1)
 	}
 	return
 }()
 
-// popCount returns the population count (number of set bits) of x.
-func popCount(x uint64) int {
+// PopCount returns the population count (number of set bits) of x.
+func PopCount(x uint64) int {
 	return int(pc[byte(x>>(0*8))] +
 		pc[byte(x>>(1*8))] +
 		pc[byte(x>>(2*8))] +

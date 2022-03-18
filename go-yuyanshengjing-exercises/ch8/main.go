@@ -1,14 +1,7 @@
 package ch8
 
 import (
-	"exercises/ch8/chat"
-	"exercises/ch8/clock"
-	"exercises/ch8/echo"
-	"exercises/ch8/ftp/client"
-	"exercises/ch8/ftp/server"
-	"exercises/ch8/mirror"
 	"fmt"
-	"gopl.io/ch5/links"
 	"io"
 	"log"
 	"net/http"
@@ -18,6 +11,15 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"gopl.io/ch5/links"
+
+	"exercises/ch8/chat"
+	"exercises/ch8/clock"
+	"exercises/ch8/echo"
+	"exercises/ch8/ftp/client"
+	"exercises/ch8/ftp/server"
+	"exercises/ch8/mirror"
 )
 
 // Exercises 练习
@@ -103,7 +105,6 @@ func (e *Exercises) Task5() {
 	_, mainName, _, _ := runtime.Caller(0)
 	filePath := path.Dir(mainName)
 	fileName := path.Join(filePath, os.Args[5]+".svg")
-	fmt.Println(fileName)
 	file, err := os.Create(fileName)
 	if err != nil {
 		if os.IsExist(err) {
