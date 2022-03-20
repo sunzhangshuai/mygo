@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -32,20 +31,26 @@ type Exercises struct {
 // 2. 试验math包中其他函数的渲染图形。你是否能输出一个egg box、moguls或a saddle图案?
 // 3. 根据高度给每个多边形上色，那样峰值部将是红色（#ff0000），谷部将是蓝色（#0000ff）。
 // 4. 参考1.7节Lissajous例子的函数，构造一个web服务器，用于计算函数曲面然后返回SVG数据给客户端。服务器必须设置Content-Type头部。
-// go run main.go -ch 3 -task 1 zs eggBox
+// go run main.go -ch=3 -task=1 zs eggBox
 // go run main.go -http=8080 后请求 http://localhost:8080/ch3/surface?shape=eggBox
 func (e *Exercises) Task1() {
-	file, err := util.NewFile(1, filepath.Join("file", os.Args[5]+".svg"))
+	var shape string
+	params := util.GetParam()
+
+	if len(params) == 0 {
+		fmt.Println("参数不足")
+	}
+	fileName := params[0] + ".svg"
+	if len(params) > 1 {
+		shape = params[1]
+	}
+
+	file, err := util.NewFile(1, filepath.Join("file", fileName))
 	if err != nil {
 		return
 	}
 	defer file.Close()
-	if len(os.Args) > 6 {
-		Surface(file, os.Args[6])
-	} else {
-		Surface(file, "")
-	}
-
+	Surface(file, shape)
 }
 
 // Task2 to Task1
@@ -69,10 +74,16 @@ func (e *Exercises) Task4() {
 // 3. 另一个生成分形图像的方式是使用牛顿法来求解一个复数方程，例如$z^4-1=0$。每个起点到四个根的迭代次数对应阴影的灰度。方程根对应的点用颜色表示。
 // 4. 通过提高精度来生成更多级别的分形。使用四种不同精度类型的数字实现相同的分形：complex64、complex128、big.Float和big.Rat。（后面两种类型在math/big包声明。Float是有指定限精度的浮点数；Rat是无限精度的有理数。）它们间的性能和内存使用对比如何？当渲染图可见时缩放的级别是多少？
 // 5. 编写一个web服务器，用于给客户端生成分形的图像。运行客户端通过HTTP参数指定x、y和zoom参数。
-// go run main.go -ch 3 -task 5 sc
+// go run main.go -ch=3 -task=5 sc
 // go run main.go -http=8080 后请求 http://localhost:8080/ch3/mandelbort
 func (e *Exercises) Task5() {
-	file, err := util.NewFile(1, filepath.Join("file", os.Args[5]+".png"))
+	params := util.GetParam()
+	if len(params) == 0 {
+		fmt.Println("参数不足")
+	}
+	fileName := params[0] + ".png"
+
+	file, err := util.NewFile(1, filepath.Join("file", fileName))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,10 +114,14 @@ func (e *Exercises) Task9() {
 // Task10
 // 1. 编写一个非递归版本的comma函数，使用bytes.Buffer代替字符串链接操作。
 // 2. 完善comma函数，以支持浮点数处理和一个可选的正负号的处理。
-// go run main.go -ch 3 -task 10 1231231231232
+// go run main.go -ch=3 -task=10 1231231231232
 func (e *Exercises) Task10() {
 	var buf bytes.Buffer
-	str := os.Args[5]
+	params := util.GetParam()
+	if len(params) == 0 {
+		fmt.Println("参数不足")
+	}
+	str := params[0]
 	start := 0
 
 	// 正负号
@@ -149,13 +164,18 @@ func (e *Exercises) Task11() {
 }
 
 // Task12 编写一个函数，判断两个字符串是否是相互打乱的，也就是说它们有着相同的字符，但是对应不同的顺序。
-// go run main.go -ch 3 -task 12 112 121
+// go run main.go -ch=3 -task=12 112 121
 func (e *Exercises) Task12() {
+	params := util.GetParam()
+	if len(params) < 2 {
+		fmt.Println("参数不足")
+	}
+
 	mapA := make(map[rune]int)
-	for _, s := range os.Args[5] {
+	for _, s := range params[0] {
 		mapA[s]++
 	}
-	for _, s := range os.Args[6] {
+	for _, s := range params[1] {
 		mapA[s]--
 	}
 	for _, val := range mapA {

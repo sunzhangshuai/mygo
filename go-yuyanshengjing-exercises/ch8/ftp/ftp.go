@@ -7,9 +7,9 @@ import (
 
 const (
 	// ServerHomeDir 服务端家目录
-	ServerHomeDir = "/Users/zhangshuai24/Documents/notes/语言/编译型语言/go/Go程序设计语言/exercises/test/ftp/file/server"
+	ServerHomeDir = "file/server"
 	// ClientHomeDir 客户端家目录
-	ClientHomeDir = "/Users/zhangshuai24/Documents/notes/语言/编译型语言/go/Go程序设计语言/exercises/test/ftp/file/client"
+	ClientHomeDir = "file/client"
 )
 
 // Commands 命令行配置

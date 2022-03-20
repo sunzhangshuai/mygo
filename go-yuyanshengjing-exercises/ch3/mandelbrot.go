@@ -6,23 +6,12 @@ import (
 	"image/png"
 	"io"
 	"math/cmplx"
-	"net/http"
 )
 
 const (
 	xMin, yMin, xMax, yMax = -2, -2, +2, +2
 	mWidth, mHeight        = 1024, 1024
 )
-
-// MandelbrotHandler http 访问
-func MandelbrotHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
-	if err = r.ParseForm(); err != nil {
-		return
-	}
-	w.Header().Set("Content-Type", "image/png")
-	Mandelbrot(w)
-}
 
 // Mandelbrot Mandelbrot图像
 func Mandelbrot(writer io.Writer) {

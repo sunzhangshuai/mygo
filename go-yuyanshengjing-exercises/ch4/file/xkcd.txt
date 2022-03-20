@@ -1,0 +1,247 @@
+{
+	"alt": "Don't we all.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/barrel_cropped_(1).jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 1,
+	"safe_title": "Barrel - Part 1",
+	"title": "Barrel - Part 1",
+	"transcript": "[[A boy sits in a barrel which is floating in an ocean.]]\nBoy: I wonder where I'll float next?\n[[The barrel drifts into the distance. Nothing else can be seen.]]\n{{Alt: Don't we all.}}",
+	"year": "2006"
+}
+{
+	"alt": "'Petit' being a reference to Le Petit Prince, which I only thought about halfway through the sketch",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/tree_cropped_(1).jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 2,
+	"safe_title": "Petit Trees (sketch)",
+	"title": "Petit Trees (sketch)",
+	"transcript": "[[Two trees are growing on opposite sides of a sphere.]]\n{{Alt-title: 'Petit' being a reference to Le Petit Prince, which I only thought about halfway through the sketch}}",
+	"year": "2006"
+}
+{
+	"alt": "Hello, island",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/island_color.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 3,
+	"safe_title": "Island (sketch)",
+	"title": "Island (sketch)",
+	"transcript": "[[A sketch of an Island]]\n{{Alt:Hello, island}}",
+	"year": "2006"
+}
+{
+	"alt": "There's a river flowing through the ocean",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/landscape_cropped_(1).jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 4,
+	"safe_title": "Landscape (sketch)",
+	"title": "Landscape (sketch)",
+	"transcript": "[[A sketch of a landscape with sun on the horizon]]\n{{Alt: There's a river flowing through the ocean}}",
+	"year": "2006"
+}
+{
+	"alt": "Blown into prime factors",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/blownapart_color.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 5,
+	"safe_title": "Blown apart",
+	"title": "Blown apart",
+	"transcript": "[[A black number 70 sees a red package.]]\n70: hey, a package!\n[[The package explodes with a \u003c\u003cBOOM\u003e\u003e and a red cloud of smoke.]]\n[[There are a red 7, a green 5 and a blue 2 lying near a scorched mark on the floor.]]\n{{alt text: Blown into prime factors}}",
+	"year": "2006"
+}
+{
+	"alt": "It's commonly known that too much perspective can be a downer.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/irony_color.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 6,
+	"safe_title": "Irony",
+	"title": "Irony",
+	"transcript": "Narrator: When self-reference, irony, and meta-humor go too far\nNarrator: A CAUTIONARY TALE\nMan 1: This statement wouldn't be funny if not for irony!\nMan 1: ha ha\nMan 2: ha ha, I guess.\nNarrator: 20,000 years later...\n[[desolate badlands landscape with an imposing sun in the sky]]\n{{It's commonly known that too much perspective can be a downer.}}",
+	"year": "2006"
+}
+{
+	"alt": "I don't remember her name at all, but she fell asleep on the floor in front of me.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/girl_sleeping_noline_(1).jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 7,
+	"safe_title": "Girl sleeping (Sketch -- 11th grade Spanish class)",
+	"title": "Girl sleeping (Sketch -- 11th grade Spanish class)",
+	"transcript": "[[Girl sleeping on her side, facing away from view]]",
+	"year": "2006"
+}
+{
+	"alt": "They are six-legged spiders",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/red_spiders_small.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 8,
+	"safe_title": "Red spiders",
+	"title": "Red spiders",
+	"transcript": "[[Many red spiders standing on and hanging from cuboids. The cuboids hang in the air with no visible means of support.]]\n{{They are six-legged spiders}}",
+	"year": "2006"
+}
+{
+	"alt": "Mal, Simon, Wash, Zoe, River, Kaylee, Jayne, Inara, Book.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/firefly.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 9,
+	"safe_title": "Serenity is coming out tomorrow",
+	"title": "Serenity is coming out tomorrow",
+	"transcript": "[[Several stick figures stand side by side in a lineup. A forlorn male in a coat, a male with combed hair, a male with spiky hair and arms outstretched enthusiastically, a female with long hair and cornrows, a shorter female with stringy hair falling over her face, an enthusiastic female with arms raised in celebration with shorter hair, a male with short hair and a goatee, a female with curly hair wearing a dress, and a stern-looking man with flyaway hair. There is no dialogue.]] \n{{Alt: Mal, Simon, Wash, Zoe, River, Kaylee, Jayne, Inara, Book.}}",
+	"year": "2006"
+}
+{
+	"alt": "My most famous drawing, and one of the first I did for the site",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/pi.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 10,
+	"safe_title": "Pi Equals",
+	"title": "Pi Equals",
+	"transcript": "Pi = 3.141592653589793helpimtrappedinauniversefactory7108914...",
+	"year": "2006"
+}
+{
+	"alt": "Awww.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/barrel_mommies.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 11,
+	"safe_title": "Barrel - Part 2",
+	"title": "Barrel - Part 2",
+	"transcript": "[[A boy sits in a barrel which is floating in an ocean.]]\nBoy: None of the places i floated had mommies.\n{{Alt: Awww.}}",
+	"year": "2006"
+}
+{
+	"alt": "Poisson distributions have no value over negative numbers",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/poisson.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 12,
+	"safe_title": "Poisson",
+	"title": "Poisson",
+	"transcript": "[[A stick figure says to another black-hat-wearing figure.]]\nMan: I'm a poisson distribution!\nMan: Still a poisson distribution.\nHat Guy: What the hell, man.  Why do you keep saying that?\nMan: Because I'm totally a poisson distribution.\nHat Guy: I'm less than zero.\n[[Man is gone; Hat Guy is whistling.]]\n{{alt text: Poisson distributions have no value over negative numbers}}",
+	"year": "2006"
+}
+{
+	"alt": "They're standing at the lip of the canyon, which isn't clear at all.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/canyon_small.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 13,
+	"safe_title": "Canyon",
+	"title": "Canyon",
+	"transcript": "[[Two men are standing at some kind of cliff edge]]\nMan 1: What time is it?\nMan 2: Now.\n[[Full scene is revealed: the men are standing at the edge of a huge canyon in a rocky, barren landscape. A pock-marked moon and a ringed planet are visible in the burgundy-coloured sky]]\nMan 1: That's a pretty boring answer.\nMan 2: Is not.\nMan 2: It's the least boring answer imaginable.\n{{Alt text: They're standing at the lip of the canyon, which isn't clear at all.}}",
+	"year": "2006"
+}
+{
+	"alt": "After reading Slashdot and BoingBoing, sometimes I have to go outside.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/copyright.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 14,
+	"safe_title": "Copyright",
+	"title": "Copyright",
+	"transcript": "[[Colored drawing of a hilly grassy landscape, stick figure leaning against a tree.]]\nMan: Sometimes I just can't get outraged over copyright law\n{{Alt: After reading Slashdot and BoingBoing, sometimes I have to go outside.}}",
+	"year": "2006"
+}
+{
+	"alt": "Just thought you should know",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/just_alerting_you.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 15,
+	"safe_title": "Just Alerting You",
+	"title": "Just Alerting You",
+	"transcript": "[[There is a man standing on top of a dinosaur (Brontosaurus?) and holding reins to the dinosaurs head.]]\nMan: Before you talk to me, I should warn you: I am kind of strange\n{{title text: Just thought you should know}}",
+	"year": "2006"
+}
+{
+	"alt": "I went to a dinner where there was a full 10 minutes of Holy Grail quotes exchanged, with no context, in lieu of conversation.  It depressed me badly.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/monty_python.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 16,
+	"safe_title": "Monty Python -- Enough",
+	"title": "Monty Python -- Enough",
+	"transcript": "Character #1 [[Raising his hands]]: We are the knights who say... Ni!!\nTwo guys and a girl: hahaha\n[[written]] Does anyone else find it funny that decades later, people are still groting --word-for-word-- a group loved for its mastery of shock, the unexpected and defiance of cocnvention?\n[[Two guys looking at a third]]\nThird guy: We are the knights who... Oh, God, I'm so sorry\n[[Close up to Third guy's face]]\nThird guy: So sorry the car just came too fast and\n[[Words crumpled inside the panel, there's barely enough space for the third guy]]\nThird guy: She was right there and I sasw her and then it was a blur and so much I ran to help didn't know she wasn't moving I'm so sorry ... so sorry\n[[Same two guys looking again at the third guy]]\nThird guy: Anyway, yeah, knights who say \"Ni\".\n[[Written centered, in markee format]]\n\u003cu\u003eHonor \u003c\nu\u003e\nMonty Python:\nPromote surreal humor.\n{{Tag: I went to a dinner where there was a full 10 minutes of Holy Grail quotes exchanged w...}}",
+	"year": "2006"
+}
+{
+	"alt": "I once made an anniversary card for my then-girlfriend with this layout.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/what_if.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 17,
+	"safe_title": "What If",
+	"title": "What If",
+	"transcript": "[[A large black circle with white bubbles inside it, filled with hearts, question marks, and stick figure couples]]\nWhat if this isn't everything it should be?\nI'm not even sure how I feel\nWhat if I'm making a mistake?\n{{Title text: I once made an anniversary card for my then-girlfriend with this layout.}}",
+	"year": "2006"
+}
+{
+	"alt": "Sn = tin",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/snapple.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 18,
+	"safe_title": "Snapple",
+	"title": "Snapple",
+	"transcript": "{{Author's Comment: This one is entirely James' fault.}}\n[[Two guys are standing and talking.]]\nRight Guy: Here, take a bite of this Snapple.\nLeft Guy: food!\n[[Guy on the right takes a bite]]\nRight Guy: Ow! What is this? \n\u003c\u003cCLINK\u003e\u003e\nLeft Guy: It's an apple infused with tin.\n[[The two guys continue to stand as if frozen]]\n \n{{Author's Comment: Those of you who know your periodic table should be laughing right about now.}} \n{{Title Text: Sn= tin}}",
+	"year": "2006"
+}
+{
+	"alt": "I still wish it were true.",
+	"day": "1",
+	"img": "https://imgs.xkcd.com/comics/george_clinton.jpg",
+	"link": "",
+	"month": "1",
+	"news": "",
+	"num": 19,
+	"safe_title": "George Clinton",
+	"title": "George Clinton",
+	"transcript": "Narrator: I once tried to start the urban legend that George Clinton has a B.A. in mathematics\n[[George Clinton indicates equations on a blackboard]]\nNarrator: ...but I wanted it to be true so badly that I started believing it myself.\n{{Title text: I still wish it were true.}}",
+	"year": "2006"
+}

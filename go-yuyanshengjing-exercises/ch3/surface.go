@@ -5,7 +5,7 @@ import (
 	"io"
 	"log"
 	"math"
-	"net/http"
+	"sync"
 )
 
 const (
@@ -20,18 +20,6 @@ const (
 var sin30, cos30 = math.Sin(angle), math.Cos(angle) // sin(30°), cos(30°)
 
 var gShape = "f"
-
-// SurfaceHandler http 访问
-func SurfaceHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
-
-	if err = r.ParseForm(); err != nil {
-		return
-	}
-	shape := r.FormValue("shape")
-	w.Header().Set("Content-Type", "image/svg+xml")
-	Surface(w, shape)
-}
 
 // Surface 画布
 func Surface(writer io.Writer, shape string) {
@@ -53,26 +41,36 @@ func Surface(writer io.Writer, shape string) {
 		return
 	}
 
+	var wg sync.WaitGroup
+	ch := make(chan struct{}, 8)
 	// 每行
 	for i := 0; i < cells; i++ {
 		// 每列
 		for j := 0; j < cells; j++ {
-			// 获取四边形的四个点
-			ax, ay := corner(i+1, j)
-			bx, by := corner(i, j)
-			cx, cy := corner(i, j+1)
-			dx, dy := corner(i+1, j+1)
-			if math.IsNaN(ax) || math.IsNaN(ay) || math.IsNaN(bx) || math.IsNaN(by) || math.IsNaN(cx) || math.IsNaN(cy) || math.IsNaN(dx) || math.IsNaN(dy) {
-				log.Fatal("corner() 产生非数值")
-			} else if _, err = fmt.Fprintf(writer, "<polygon style='stroke: %s;' "+
-				"points='%g,%g,%g,%g,%g,%g,%g,%g'/>\n",
-				makeColor(i, j, zMin, zMax), ax, ay, bx, by, cx, cy, dx, dy); err != nil {
-				log.Fatal(err)
-				return
-			}
+			ch <- struct{}{}
+			wg.Add(1)
+
+			go func(i, j int) {
+				defer wg.Done()
+				// 获取四边形的四个点
+				ax, ay := corner(i+1, j)
+				bx, by := corner(i, j)
+				cx, cy := corner(i, j+1)
+				dx, dy := corner(i+1, j+1)
+				if math.IsNaN(ax) || math.IsNaN(ay) || math.IsNaN(bx) || math.IsNaN(by) || math.IsNaN(cx) || math.IsNaN(cy) || math.IsNaN(dx) || math.IsNaN(dy) {
+					//log.Fatal("corner() 产生非数值")
+				} else if _, err = fmt.Fprintf(writer, "<polygon style='stroke: %s;' "+
+					"points='%g,%g,%g,%g,%g,%g,%g,%g'/>\n",
+					makeColor(i, j, zMin, zMax), ax, ay, bx, by, cx, cy, dx, dy); err != nil {
+					log.Fatal(err)
+					return
+				}
+			}(i, j)
+			<-ch
 		}
 	}
 
+	wg.Wait()
 	if _, err = fmt.Fprintln(writer, "</svg>"); err != nil {
 		return
 	}

@@ -23,9 +23,8 @@ import (
 	_ "exercises/ch10/compress/tar"
 	_ "exercises/ch10/compress/zip"
 	"exercises/ch9"
+	"exercises/util"
 )
-
-var fPath string
 
 // Exercises 练习
 type Exercises struct {
@@ -52,9 +51,13 @@ func trans(in io.Reader, out io.Writer, typ string) error {
 // Task1 扩展jpeg程序，以支持任意图像格式之间的相互转换，使用image.Decode检测支持的格式类型，然后通过flag命令行标志参数选择输出的格式。
 // go run main.go -ch 10 -task 1 jpeg <./ch10/file/image.gif >./ch10/file/image.jpeg
 func (e *Exercises) Task1() {
-	typ := os.Args[5]
-	if err := trans(os.Stdin, os.Stdout, typ); err != nil {
-		fmt.Fprintf(os.Stderr, "jpeg: %v\n", err)
+	params := util.GetParam()
+	if len(params) == 0 {
+		fmt.Println("参数不足")
+		return
+	}
+	if err := trans(os.Stdin, os.Stdout, params[0]); err != nil {
+		fmt.Printf("jpeg: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -66,9 +69,14 @@ func (e *Exercises) Task1() {
 // go run main.go -ch 10 -task 2 tar encode test
 // go run main.go -ch 10 -task 2 tar decode test.tar.gz
 func (e *Exercises) Task2() {
-	action := os.Args[5] // 压缩算法
-	typ := os.Args[6]    // 解压缩or压缩
-	filename := os.Args[7]
+	params := util.GetParam()
+	if len(params) == 3 {
+		fmt.Println("参数不足")
+		return
+	}
+	action := params[1] // 压缩算法
+	typ := params[2]    // 解压缩or压缩
+	filename := params[3]
 
 	_, fullName, _, _ := runtime.Caller(0)
 	filePath := path.Dir(fullName)
@@ -83,16 +91,18 @@ func (e *Exercises) Task2() {
 }
 
 // Task3 从 http://gopl.io/ch1/helloworld?go-get=1 获取内容，查看本书的代码的真实托管的网址（go get请求HTML页面时包含了go-get参数，以区别普通的浏览器请求）。
-// go run main.go -ch 10 -task 3 zhangshuai
+// go run main.go -ch=10 -task=3 zhangshuai
 func (e *Exercises) Task3() {
-	_, fullName, _, _ := runtime.Caller(0)
-	filePath := path.Dir(fullName)
-	fileName := path.Join(filePath, "file", os.Args[5]+".html")
-	file, err := os.Create(fileName)
-	if err != nil {
-		if os.IsExist(err) {
-			file.Truncate(0)
-		}
+	var err error
+	var file *os.File
+
+	params := util.GetParam()
+	if len(params) == 0 {
+		fmt.Println("请输入文件名")
+	}
+
+	if file, err = util.NewFile(1, filepath.Join("file", params[0]+".html")); err != nil {
+		fmt.Println(err)
 	}
 	defer file.Close()
 	res, _ := http.Get("http://gopl.io/ch1/helloworld?go-get=1")
@@ -144,9 +154,4 @@ func (e *Exercises) Task4() {
 
 	group.Wait()
 	fmt.Println(memo.GetAllKey(), len(memo.GetAllKey()), count)
-}
-
-func init() {
-	_, fullName, _, _ := runtime.Caller(0)
-	fPath = filepath.Dir(fullName)
 }

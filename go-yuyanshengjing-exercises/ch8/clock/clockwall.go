@@ -5,14 +5,12 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 )
 
 // ClockWall 时间墙
-func ClockWall() {
-	args := os.Args[6:]
+func ClockWall(args []string) {
 	// 先输出时区
 	title := "时区\t"
 	for _, val := range args {

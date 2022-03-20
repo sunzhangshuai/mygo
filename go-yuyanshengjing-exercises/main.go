@@ -60,8 +60,34 @@ func run() {
 
 // startHttp 启动http服务
 func startHttp(port string) {
-	http.HandleFunc("/ch3/surface", ch3.SurfaceHandler)
-	http.HandleFunc("/ch3/mandelbrot", ch3.MandelbrotHandler)
+	http.HandleFunc("/ch1/lissajous", func(writer http.ResponseWriter, request *http.Request) {
+		var err error
+		if err = request.ParseForm(); err != nil {
+			return
+		}
+		cycles := request.FormValue("cycles")
+		parseFloat, _ := strconv.ParseFloat(cycles, 8)
+		writer.Header().Set("Content-Type", "image/gif")
+		fmt.Println(ch1.Lissajous(writer, func() uint8 {
+			return 1
+		}, parseFloat))
+	})
+	http.HandleFunc("/ch3/surface", func(writer http.ResponseWriter, request *http.Request) {
+		var err error
+		if err = request.ParseForm(); err != nil {
+			return
+		}
+		shape := request.FormValue("shape")
+		writer.Header().Set("Content-Type", "image/svg+xml")
+		ch3.Surface(writer, shape)
+	})
+	http.HandleFunc("/ch3/mandelbrot", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "image/png")
+		ch3.Mandelbrot(writer)
+	})
+	http.HandleFunc("/ch4/template", func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println(ch4.RunTemplate(writer))
 
+	})
 	log.Fatal(http.ListenAndServe("localhost:"+port, nil))
 }
