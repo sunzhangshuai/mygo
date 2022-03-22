@@ -77,7 +77,7 @@ func Surface(writer io.Writer, shape string) {
 }
 
 // corner 获取顶点
-func corner(i, j int) (float64, float64) {
+func corner(i, j int) (sx float64, sy float64) {
 	// Find point (x,y) at corner of cell (i,j).
 	x := XYRange * (float64(i)/cells - 0.5)
 	y := XYRange * (float64(j)/cells - 0.5)
@@ -94,9 +94,9 @@ func corner(i, j int) (float64, float64) {
 	}
 
 	// 将（x，y，z）等轴投影到二维SVG画布（sx，sy）上。
-	sx := width/2 + (x-y)*cos30*XYScale
-	sy := height/2 + (x+y)*sin30*XYScale - z*zScale
-	return sx, sy
+	sx = width/2 + (x-y)*cos30*XYScale
+	sy = height/2 + (x+y)*sin30*XYScale - z*zScale
+	return
 }
 
 // f 普通算法

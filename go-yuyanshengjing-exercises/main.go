@@ -14,16 +14,21 @@ import (
 	"exercises/ch2"
 	"exercises/ch3"
 	"exercises/ch4"
+	"exercises/ch5"
+	"exercises/ch6"
+	"exercises/ch7"
 	"exercises/ch8"
 	"exercises/ch9"
 )
 
 type ChList struct {
-	Ch1 *ch1.Exercises
-	Ch2 *ch2.Exercises
-	Ch3 *ch3.Exercises
-	Ch4 *ch4.Exercises
-	//Ch5 *ch5.Exercises
+	Ch1  *ch1.Exercises
+	Ch2  *ch2.Exercises
+	Ch3  *ch3.Exercises
+	Ch4  *ch4.Exercises
+	Ch5  *ch5.Exercises
+	Ch6  *ch6.Exercises
+	Ch7  *ch7.Exercises
 	Ch8  *ch8.Exercises
 	Ch9  *ch9.Exercises
 	Ch10 *ch10.Exercises
