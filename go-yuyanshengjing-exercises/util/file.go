@@ -24,3 +24,11 @@ func NewFile(depth int, fName string) (*os.File, error) {
 	file, _ := os.Create(fileName)
 	return file, nil
 }
+
+// GetFile 获取文件
+func GetFile(depth int, fName string) (*os.File, error) {
+	_, fullName, _, _ := runtime.Caller(depth)
+	fmt.Println(fullName)
+	fileName := filepath.Join(filepath.Dir(fullName), fName)
+	return os.Open(fileName)
+}

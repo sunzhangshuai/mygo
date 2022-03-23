@@ -909,11 +909,69 @@ func name(parameter-list) (result-list) {
 
 # 接口
 
-> 1. 接口类型只能定义方法，不会暴露出它所代表的对象的内部值的结构和这个对象支持的基础操作的集合。
+> 接口类型只能定义方法，不会暴露出它所代表的对象的内部值的结构和这个对象支持的基础操作的集合。
 
-## 接口声明
+## 接口类型
 
+1. 只能定义方法，不会暴露出它所代表的对象的内部值的结构和这个对象支持的基础操作的集合。
 
+2. 具体描述了一系列方法的集合，一个实现了这些方法的具体类型是这个接口类型的实例。
+
+3. Go语言中的命名习惯是单方法接口。
+
+4. *接口内嵌*
+
+   ```go
+   type ReadWriter interface {
+       Reader
+       Writer
+   }
+   type ReadWriter interface {
+       Read(p []byte) (n int, err error)
+       Write(p []byte) (n int, err error)
+   }
+   type ReadWriter interface {
+       Read(p []byte) (n int, err error)
+       Writer
+   }
+   ```
+
+   > 3种定义方式都是一样的效果。
+
+5. 接口类型封装和隐藏具体类型和它的值。
+
+## 接口实现条件
+
+> 一个类型如果拥有一个接口需要的所有方法，那么这个类型就实现了这个接口。
+
+1. 接口指定的规则非常简单：表达一个类型属于某个接口只要这个类型实现这个接口。
+2. 因为空接口类型对实现它的类型没有要求，所以我们可以将任意一个值赋给空接口类型。
+3. 因为接口与实现只依赖于判断两个类型的方法，所以没有必要定义一个具体类型和它实现的接口之间的关系。
+4. 非空的接口类型比如io.Writer经常被指针类型实现，尤其当一个或多个接口方法像Write方法那样隐式的给接收者带来变化的时候。一个结构体的指针是非常常见的承载方法的类型。
+5. 在Go语言中我们可以在需要的时候定义一个新的抽象或者特定特点的组，而不需要修改具体类型的定义。
+
+## 接口值
+
+## flag.Value
+
+flag.Duration函数创建一个time.Duration类型的标记变量并且允许用户通过多种用户友好的方式来设置这个变量的大小，这种方式还包括和String方法相同的符号排版形式。
+
+```go
+var period = flag.Duration("period", 1*time.Second, "sleep period")
+```
+
+> ```shell
+> # Sleeping for 50ms...
+> ./sleep -period 50ms
+> # Sleeping for 2m30s...
+> ./sleep -period 2m30s
+> # Sleeping for 1h30m0s...
+> ./sleep -period 1.5h
+> # invalid value "1 day" for flag -period: time: invalid duration 1 day
+> ./sleep -period "1 day"
+> ```
+
+我们为我们自己的数据类型定义新的标记符号是简单容易的。我们只需要定义一个实现flag.Value接口的类型。
 
 # Goroutines
 

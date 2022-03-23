@@ -38,6 +38,7 @@ type ChList struct {
 var chIndex = flag.Int("ch", 1, "章节")
 var taskIndex = flag.Int("task", 1, "作业")
 var httpFlag = flag.String("http", "", "http服务端口")
+var celsiusFlag = ch7.CelsiusFlag("celsius", 20.0, "温度")
 
 // main 练习的入口函数，必传参数 -ch、-task
 func main() {
@@ -57,6 +58,7 @@ func main() {
 
 // run 执行作业
 func run() {
+	ch7.SetCelsius(celsiusFlag)
 	reflect.ValueOf(ChList{}).
 		FieldByName("Ch" + strconv.Itoa(*chIndex)).
 		MethodByName("Task" + strconv.Itoa(*taskIndex)).
