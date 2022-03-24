@@ -952,7 +952,63 @@ func name(parameter-list) (result-list) {
 
 ## 接口值
 
-## flag.Value
+```go
+var w io.Writer
+```
+
+> <img src="./imgs/接口初始化.png" alt="img" style="zoom:75%;" />
+
+```go
+w = os.Stdout
+```
+
+> <img src="./imgs/File接口.png" alt="img" style="zoom:75%;" />
+
+```go
+w = new(bytes.Buffer)
+w = nil
+```
+
+> ![img](./imgs/buffer接口.png)
+
+```go
+w = nil
+```
+
+> <img src="./imgs/接口初始化.png" alt="img" style="zoom:75%;" />
+
+- **组成**：由两个部分组成，一个具体的类型和那个类型的值。它们被称为接口的动态类型和动态值。
+
+- **零值**：对于一个接口的零值就是它的类型和值的部分都是nil。
+
+- **panic**：调用一个空接口值上的任意方法都会产生panic。
+
+- **比较**：
+
+  - 如果两个接口值的动态类型相同，但是这个动态类型是不可比较的（比如切片），将它们进行比较就会失败并且panic。
+  - 两个接口值相等仅当它们都是nil值，或者它们的动态类型相同并且动态值也根据这个动态类型的==操作相等。
+  - 因为接口值是可比较的，所以它们可以用在map的键或者作为switch语句的操作数。
+
+- **警告**：一个包含nil指针的接口不是nil接口。
+
+  ```go
+  var buf *bytes.Buffer
+  f(buf)
+  func f(out io.Writer) {
+      // ...do something...
+      if out != nil {
+          out.Write([]byte("done!\n"))
+      }
+  }
+  ```
+
+  > 会发生panic，因为接口不为nil，但接口值为nil。
+  >
+  > ![img](./imgs/包含nil指针的接口.png)
+
+## 举例
+
+### flag.Value
 
 flag.Duration函数创建一个time.Duration类型的标记变量并且允许用户通过多种用户友好的方式来设置这个变量的大小，这种方式还包括和String方法相同的符号排版形式。
 
@@ -972,6 +1028,22 @@ var period = flag.Duration("period", 1*time.Second, "sleep period")
 > ```
 
 我们为我们自己的数据类型定义新的标记符号是简单容易的。我们只需要定义一个实现flag.Value接口的类型。
+
+### sort.Interface接口
+
+```go
+package sort
+
+type Interface interface {
+    Len() int
+    Less(i, j int) bool // i, j are indices of sequence elements
+    Swap(i, j int)
+}
+```
+
+- sort包为[]int、[]string和[]float64的正常排序提供了特定版本的函数和类型。
+- sort.Sort：排序。
+- sort.Reverse：sort包定义了一个不公开的struct类型reverse，它嵌入了一个sort.Interface。reverse的Less方法调用了内嵌的sort.Interface值的Less方法，但是通过交换索引的方式使排序结果变成逆序。
 
 # Goroutines
 
@@ -1628,3 +1700,5 @@ fmt.Println(reflect.TypeOf(w)) // "*os.File"
   > - Chan、Func、Ptr、Slice 和 Map 对应的引用类型。
   > - interface 类型。
   > - 还有表示空值的 Invalid 类型。（空的 reflect.Value 的 kind 即为 Invalid。）
+
+```jav

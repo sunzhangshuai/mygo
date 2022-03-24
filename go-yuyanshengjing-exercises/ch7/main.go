@@ -88,12 +88,30 @@ func (e *Exercises) Task5() {
 }
 
 // Task6 对tempFlag加入支持开尔文温度。
-// go run main.go -ch=7 -task=5 -celsius=18
+// go run main.go -ch=7 -task=6 -celsius=18C
 func (e *Exercises) Task6() {
 	fmt.Println(fg)
 }
 
 // Task7 解释为什么帮助信息在它的默认值是20.0没有包含°C的情况下输出了°C。
+// go run main.go -ch=7 -task=7
 func (e *Exercises) Task7() {
 	fmt.Println("tempconv.Celsius 的 String 方法会加上 °C")
+}
+
+// Task8 很多图形界面提供了一个有状态的多重排序表格插件：
+// 主要的排序键是最近一次点击过列头的列，第二个排序键是第二最近点击过列头的列，等等。
+// 定义一个sort.Interface的实现用在这样的表格中。比较这个实现方式和重复使用sort.Stable来排序的方式。
+func (e *Exercises) Task8() {
+}
+
+// Task9 使用html/template包（§4.6）替代printTracks将tracks展示成一个HTML表格。
+// 将这个解决方案用在前一个练习中，让每次点击一个列的头部产生一个HTTP请求来排序这个表格。
+func (e *Exercises) Task9() {
+}
+
+// Task10 sort.Interface类型也可以适用在其它地方。
+// 编写一个IsPalindrome(s sort.Interface) bool函数表明序列s是否是回文序列，
+// 换句话说反向排序不会改变这个序列。假设如果!s.Less(i, j) && !s.Less(j, i)则索引i和j上的元素相等。
+func (e *Exercises) Task10() {
 }
