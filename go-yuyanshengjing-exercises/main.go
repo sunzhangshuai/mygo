@@ -17,6 +17,7 @@ import (
 	"exercises/ch5"
 	"exercises/ch6"
 	"exercises/ch7"
+	"exercises/ch7/eval"
 	"exercises/ch8"
 	"exercises/ch9"
 )
@@ -68,11 +69,7 @@ func run() {
 // startHttp 启动http服务
 func startHttp(port string) {
 	http.HandleFunc("/ch1/lissajous", func(writer http.ResponseWriter, request *http.Request) {
-		var err error
-		if err = request.ParseForm(); err != nil {
-			return
-		}
-		cycles := request.FormValue("cycles")
+		cycles := request.URL.Query().Get("cycles")
 		parseFloat, _ := strconv.ParseFloat(cycles, 8)
 		writer.Header().Set("Content-Type", "image/gif")
 		fmt.Println(ch1.Lissajous(writer, func() uint8 {
@@ -80,13 +77,8 @@ func startHttp(port string) {
 		}, parseFloat))
 	})
 	http.HandleFunc("/ch3/surface", func(writer http.ResponseWriter, request *http.Request) {
-		var err error
-		if err = request.ParseForm(); err != nil {
-			return
-		}
-		shape := request.FormValue("shape")
 		writer.Header().Set("Content-Type", "image/svg+xml")
-		ch3.Surface(writer, shape)
+		ch3.Surface(writer, request.URL.Query().Get("shape"))
 	})
 	http.HandleFunc("/ch3/mandelbrot", func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "image/png")
@@ -96,5 +88,21 @@ func startHttp(port string) {
 		fmt.Println(ch4.RunTemplate(writer))
 
 	})
+	http.HandleFunc("/ch7/sort", func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println(ch7.FmtTracks(writer, request.URL.Query().Get("order")))
+
+	})
+
+	// ch7/database
+	http.HandleFunc("/ch7/database/list", ch7.DB.List)
+	http.HandleFunc("/ch7/database/add", ch7.DB.Add)
+	http.HandleFunc("/ch7/database/delete", ch7.DB.Delete)
+	http.HandleFunc("/ch7/database/update", ch7.DB.Update)
+	http.HandleFunc("/ch7/database/get", ch7.DB.Get)
+
+	http.HandleFunc("/ch7/eval", func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println(eval.Run(writer, request.URL.Query().Get("expr")))
+	})
+
 	log.Fatal(http.ListenAndServe("localhost:"+port, nil))
 }

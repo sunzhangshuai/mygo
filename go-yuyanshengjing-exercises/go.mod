@@ -11,5 +11,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 	golang.org/x/tools v0.1.9 // indirect
-	gopl.io v0.0.0-20211004154805-1ae3ec64947b
+	gopl.io v0.0.0-20200323155855-65c318dde95e
 )

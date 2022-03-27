@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Hello</title>
+</head>
+<body>
+<table>
+    <tr>
+        <th onclick="location.href='http://localhost:8080/ch7/sort?order=Title'">标题</th>
+        <th onclick="location.href='http://localhost:8080/ch7/sort?order=Artist'">演唱者</th>
+        <th onclick="location.href='http://localhost:8080/ch7/sort?order=Album'">专辑</th>
+        <th onclick="location.href='http://localhost:8080/ch7/sort?order=Year'">出版时间</th>
+        <th onclick="location.href='http://localhost:8080/ch7/sort?order=Length'">音乐长度</th>
+    </tr>
+    {{range .}}<tr>
+        <td class="title">{{ .Title }}</td>
+        <td>{{ .Artist }}</td>
+        <td>{{ .Album }}</td>
+        <td>{{ .Year }}</td>
+        <td>{{ .Length }}</td>
+    </tr>{{end}}
+</table>
+</body>
+</html>

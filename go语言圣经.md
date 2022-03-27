@@ -940,15 +940,80 @@ func name(parameter-list) (result-list) {
 
 5. 接口类型封装和隐藏具体类型和它的值。
 
-## 接口实现条件
+### 类型断言
 
-> 一个类型如果拥有一个接口需要的所有方法，那么这个类型就实现了这个接口。
+> 类型断言是一个使用在接口值上的操作。
+>
+> 对一个接口类型的类型断言改变了类型的表述方式，改变了可以获取的方法集合（通常更大），但是它保留了接口值内部的动态类型和值的部分。
+>
+> ```go
+> x.(T)
+> ```
 
-1. 接口指定的规则非常简单：表达一个类型属于某个接口只要这个类型实现这个接口。
-2. 因为空接口类型对实现它的类型没有要求，所以我们可以将任意一个值赋给空接口类型。
-3. 因为接口与实现只依赖于判断两个类型的方法，所以没有必要定义一个具体类型和它实现的接口之间的关系。
-4. 非空的接口类型比如io.Writer经常被指针类型实现，尤其当一个或多个接口方法像Write方法那样隐式的给接收者带来变化的时候。一个结构体的指针是非常常见的承载方法的类型。
-5. 在Go语言中我们可以在需要的时候定义一个新的抽象或者特定特点的组，而不需要修改具体类型的定义。
+- **类型T是一个具体类型**
+
+  > 类型断言检查x的动态类型是否和T相同。
+  >
+  > - 检查成功：结果是x的动态。
+  >
+  > - 检查失败：
+  >
+  >   - 单赋值抛出panic。
+  >
+  >   - ```go
+  >     f, ok := w.(*os.File) 
+  >     ```
+  >
+  >     > 不会抛出panic。
+
+- **断言的类型T是一个接口类型**
+
+  > 类型断言检查是否x的动态类型满足T。
+  >
+  > - 检查成功：结果是一个有相同动态类型和值部分的接口值，但是结果为类型T。
+  > - 检查失败：同上。
+
+- **x 是一个 nil 接口值**
+
+  > 那么不论被断言的类型是什么这个类型断言都会失败。
+
+- **if 中变量名重用**
+
+  ```go
+  if w, ok := w.(*os.File); ok {
+      // ...use w...
+  }
+  ```
+
+  > 其实是声明了一个同名的新的本地变量，外层原来的w不会被改变。
+
+### 询问行为
+
+```go
+package fmt
+
+func formatOneValue(x interface{}) string {
+    if err, ok := x.(error); ok {
+        return err.Error()
+    }
+    if str, ok := x.(Stringer); ok {
+        return str.String()
+    }
+    // ...all other types...
+}
+```
+
+### 类型分支
+
+```go
+switch x.(type) {
+case nil:       // ...
+case int, uint: // ...
+case bool:      // ...
+case string:    // ...
+default:        // ...
+}
+```
 
 ## 接口值
 
@@ -1006,6 +1071,16 @@ w = nil
   >
   > ![img](./imgs/包含nil指针的接口.png)
 
+## 接口实现
+
+> 一个类型如果拥有一个接口需要的所有方法，那么这个类型就实现了这个接口。
+
+1. 接口指定的规则非常简单：表达一个类型属于某个接口只要这个类型实现这个接口。
+2. 因为空接口类型对实现它的类型没有要求，所以我们可以将任意一个值赋给空接口类型。
+3. 因为接口与实现只依赖于判断两个类型的方法，所以没有必要定义一个具体类型和它实现的接口之间的关系。
+4. 非空的接口类型比如io.Writer经常被指针类型实现，尤其当一个或多个接口方法像Write方法那样隐式的给接收者带来变化的时候。一个结构体的指针是非常常见的承载方法的类型。
+5. 在Go语言中我们可以在需要的时候定义一个新的抽象或者特定特点的组，而不需要修改具体类型的定义。
+
 ## 举例
 
 ### flag.Value
@@ -1029,7 +1104,7 @@ var period = flag.Duration("period", 1*time.Second, "sleep period")
 
 我们为我们自己的数据类型定义新的标记符号是简单容易的。我们只需要定义一个实现flag.Value接口的类型。
 
-### sort.Interface接口
+### sort.Interface
 
 ```go
 package sort
@@ -1042,8 +1117,149 @@ type Interface interface {
 ```
 
 - sort包为[]int、[]string和[]float64的正常排序提供了特定版本的函数和类型。
-- sort.Sort：排序。
+- sort.Sort：排序。【快排】
+- sort.Stable：稳定排序【插入排序】。
 - sort.Reverse：sort包定义了一个不公开的struct类型reverse，它嵌入了一个sort.Interface。reverse的Less方法调用了内嵌的sort.Interface值的Less方法，但是通过交换索引的方式使排序结果变成逆序。
+
+### http.Handler
+
+- **ListenAndServe**
+
+  > 需要一个例如“localhost:8000”的服务器地址，和一个所有请求都可以分派的Handler接口实例。
+  >
+  > ```go
+  > func ListenAndServe(address string, h Handler) error
+  > ```
+  >
+  > 更真实的服务器会定义多个不同的URL，每一个都会触发一个不同的行为。
+  >
+  > ```go
+  > func (db database) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+  >   switch req.URL.Path {
+  >     case "/list":
+  >   case "/price":
+  >   default:
+  >     w.WriteHeader(http.StatusNotFound) // 404
+  >     fmt.Fprintf(w, "no such page: %s\n", req.URL)
+  >   }
+  > }
+  > ```
+
+- **ServeMux**
+
+  > 以通过组合来处理更加错综复杂的路由需求。
+  >
+  > ```go
+  > mux := http.NewServeMux()
+  > mux.Handle("/list", http.HandlerFunc(db.list))
+  > mux.Handle("/price", http.HandlerFunc(db.price))
+  > log.Fatal(http.ListenAndServe("localhost:8000", mux))
+  > ```
+
+- **Handler** 和 **HandlerFunc**
+
+  > Handler是个接口，必须实现ServeHTTP方法。
+  >
+  > HandlerFunc是一个让函数值满足一个接口的适配器，这里函数和这个接口仅有的方法有相同的函数签名。
+
+- **DefaultServerMux**
+
+  > net/http包提供了一个全局的ServeMux实例DefaultServerMux和包级别的http.Handle和http.HandleFunc函数。
+  >
+  > 服务器的主函数可以如下简化。
+  >
+  > ```go
+  > db := database{"shoes": 50, "socks": 5}
+  > http.HandleFunc("/list", db.list)
+  > http.HandleFunc("/price", db.price)
+  > log.Fatal(http.ListenAndServe("localhost:8000", nil))
+  > ```
+
+### error
+
+```go
+type error interface {
+  Error() string
+}
+```
+
+- **errors.New**
+
+  ```go
+  package errors
+  func New(text string) error { return &errorString{text} }
+  type errorString struct { text string }
+  func (e *errorString) Error() string { return e.text }
+  ```
+
+- **fmt.Errorf**：更加方便，它还会处理字符串格式化。
+
+  ```go
+  func Errorf(format string, args ...interface{}) error {
+      return errors.New(Sprintf(format, args...))
+  }
+  ```
+
+- **syscall.Errno**：syscall包提供了Go语言底层系统调用API。在多个平台上，它定义一个实现error接口的数字类型Errno，并且在Unix平台上，Errno的Error方法会从一个字符串表中查找错误消息。
+
+  ```go
+  package syscall
+  
+  type Errno uintptr // operating system error code
+  
+  var errors = [...]string{
+    1:   "operation not permitted",   // EPERM
+    2:   "no such file or directory", // ENOENT
+    3:   "no such process",           // ESRCH
+    // ...
+  }
+  
+  func (e Errno) Error() string {
+    if 0 <= int(e) && int(e) < len(errors) {
+      return errors[e]
+    }
+    return fmt.Sprintf("errno %d", e)
+  }
+  ```
+
+- **os.PathError**
+
+  ```go
+  package os
+  
+  // PathError records an error and the operation and file path that caused it.
+  type PathError struct {
+      Op   string
+      Path string
+      Err  error
+  }
+  
+  func (e *PathError) Error() string {
+      return e.Op + " " + e.Path + ": " + e.Err.Error()
+  }
+  
+  import (
+      "errors"
+      "syscall"
+  )
+  
+  var ErrNotExist = errors.New("file does not exist")
+  
+  // IsNotExist returns a boolean indicating whether the error is known to
+  // report that a file or directory does not exist. It is satisfied by
+  // ErrNotExist as well as some syscall errors.
+  func IsNotExist(err error) bool {
+      if pe, ok := err.(*PathError); ok {
+          err = pe.Err
+      }
+      return err == syscall.ENOENT || err == ErrNotExist
+  }
+  ```
+
+## 建议
+
+1. 接口只有当有两个或两个以上的具体类型必须以相同的方式进行处理时才需要。
+2. 当一个接口只被一个单一的具体类型实现时有一个例外，就是由于它的依赖，这个具体类型不能和这个接口存在在一个相同的包中。这种情况下，一个接口是解耦这两个包的一个好方式。
 
 # Goroutines
 
@@ -1676,8 +1892,6 @@ fmt.Println(t)          // "int"
 var w io.Writer = os.Stdout
 fmt.Println(reflect.TypeOf(w)) // "*os.File"
 ```
-
-
 
 ## reflect.Value
 
