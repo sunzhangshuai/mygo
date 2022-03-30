@@ -11,6 +11,8 @@ import (
 
 	"exercises/ch1"
 	"exercises/ch10"
+	"exercises/ch12"
+	"exercises/ch13"
 	"exercises/ch2"
 	"exercises/ch3"
 	"exercises/ch4"
@@ -33,6 +35,8 @@ type ChList struct {
 	Ch8  *ch8.Exercises
 	Ch9  *ch9.Exercises
 	Ch10 *ch10.Exercises
+	Ch12 *ch12.Exercises
+	Ch13 *ch13.Exercises
 }
 
 // 参数
@@ -51,7 +55,6 @@ func main() {
 		startHttp(*httpFlag)
 		return
 	}
-
 	// 执行作业
 	run()
 	fmt.Println(os.Args[0])
@@ -102,6 +105,19 @@ func startHttp(port string) {
 
 	http.HandleFunc("/ch7/eval", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Println(eval.Run(writer, request.URL.Query().Get("expr")))
+	})
+
+	http.HandleFunc("/ch12/unpack", func(writer http.ResponseWriter, request *http.Request) {
+		var data struct {
+			Labels     []string `http:"l" valid:"2"`
+			MaxResults int      `http:"max" valid:"1"`
+			Exact      bool     `http:"x"`
+		}
+		if err := ch12.Unpack(request, &data); err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest) // 400
+			return
+		}
+		fmt.Fprintf(writer, "Search: %+v\n", data)
 	})
 
 	log.Fatal(http.ListenAndServe("localhost:"+port, nil))

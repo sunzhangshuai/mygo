@@ -92,10 +92,9 @@ for {
   1. *其中 「类型」 或 「= 表达式」 两个部分可以省略其中的一个*。
 
      - **省略类型**：根据初始化表达式来推导变量的类型信息。
-
-
+     
      - **省略初始化表达式**：用**零值**初始化该变量。*零值初始化机制可以确保每个声明的变量总是有一个良好定义的值*。
-    
+     
        >数值类型：0。
        >
        >布尔类型：false。
@@ -142,8 +141,8 @@ for {
 
   ```go
   func f() *int {
-      v := 1
-      return &v
+    v := 1
+    return &v
   }
   ```
 
@@ -355,6 +354,9 @@ y := 3 + 4i
 
 > 写法
 
+- **real()**：获取实部。
+- **imag()**：获取虚部 
+
 ## 布尔型
 
 一个布尔类型的值只有两种：true和false。
@@ -460,10 +462,10 @@ y := 3 + 4i
 
   ```go
   const (
-      a = 1
-      b
-      c = 2
-      d
+    a = 1
+    b
+    c = 2
+    d
   )
   ```
 
@@ -477,21 +479,21 @@ y := 3 + 4i
 
 ```go
 const (
-    Sunday Weekday = iota
-    Monday
-    Tuesday
-    Wednesday
-    Thursday
-    Friday
-    Saturday
+  Sunday Weekday = iota
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
 )
 
 const (
-    FlagUp Flags = 1 << iota // is up
-    FlagBroadcast            // supports broadcast access capability
-    FlagLoopback             // is a loopback interface
-    FlagPointToPoint         // belongs to a point-to-point link
-    FlagMulticast            // supports multicast access capability
+  FlagUp Flags = 1 << iota // is up
+  FlagBroadcast            // supports broadcast access capability
+  FlagLoopback             // is a loopback interface
+  FlagPointToPoint         // belongs to a point-to-point link
+  FlagMulticast            // supports multicast access capability
 )
 ```
 
@@ -923,16 +925,16 @@ func name(parameter-list) (result-list) {
 
    ```go
    type ReadWriter interface {
-       Reader
-       Writer
+     Reader
+     Writer
    }
    type ReadWriter interface {
-       Read(p []byte) (n int, err error)
-       Write(p []byte) (n int, err error)
+     Read(p []byte) (n int, err error)
+     Write(p []byte) (n int, err error)
    }
    type ReadWriter interface {
-       Read(p []byte) (n int, err error)
-       Writer
+     Read(p []byte) (n int, err error)
+     Writer
    }
    ```
 
@@ -993,13 +995,13 @@ func name(parameter-list) (result-list) {
 package fmt
 
 func formatOneValue(x interface{}) string {
-    if err, ok := x.(error); ok {
-        return err.Error()
-    }
-    if str, ok := x.(Stringer); ok {
-        return str.String()
-    }
-    // ...all other types...
+  if err, ok := x.(error); ok {
+    return err.Error()
+  }
+  if str, ok := x.(Stringer); ok {
+    return str.String()
+  }
+  // ...all other types...
 }
 ```
 
@@ -1060,10 +1062,10 @@ w = nil
   var buf *bytes.Buffer
   f(buf)
   func f(out io.Writer) {
-      // ...do something...
-      if out != nil {
-          out.Write([]byte("done!\n"))
-      }
+    // ...do something...
+    if out != nil {
+      out.Write([]byte("done!\n"))
+    }
   }
   ```
 
@@ -1110,9 +1112,9 @@ var period = flag.Duration("period", 1*time.Second, "sleep period")
 package sort
 
 type Interface interface {
-    Len() int
-    Less(i, j int) bool // i, j are indices of sequence elements
-    Swap(i, j int)
+  Len() int
+  Less(i, j int) bool // i, j are indices of sequence elements
+  Swap(i, j int)
 }
 ```
 
@@ -1137,8 +1139,10 @@ type Interface interface {
   > func (db database) ServeHTTP(w http.ResponseWriter, req *http.Request) {
   >   switch req.URL.Path {
   >     case "/list":
-  >   case "/price":
-  >   default:
+  >     fmt.Println(111)
+  >     case "/price":
+  >     fmt.Println(222)
+  >     default:
   >     w.WriteHeader(http.StatusNotFound) // 404
   >     fmt.Fprintf(w, "no such page: %s\n", req.URL)
   >   }
@@ -1196,7 +1200,7 @@ type error interface {
 
   ```go
   func Errorf(format string, args ...interface{}) error {
-      return errors.New(Sprintf(format, args...))
+    return errors.New(Sprintf(format, args...))
   }
   ```
 
@@ -1229,18 +1233,18 @@ type error interface {
   
   // PathError records an error and the operation and file path that caused it.
   type PathError struct {
-      Op   string
-      Path string
-      Err  error
+    Op   string
+    Path string
+    Err  error
   }
   
   func (e *PathError) Error() string {
-      return e.Op + " " + e.Path + ": " + e.Err.Error()
+    return e.Op + " " + e.Path + ": " + e.Err.Error()
   }
   
   import (
-      "errors"
-      "syscall"
+    "errors"
+    "syscall"
   )
   
   var ErrNotExist = errors.New("file does not exist")
@@ -1249,10 +1253,10 @@ type error interface {
   // report that a file or directory does not exist. It is satisfied by
   // ErrNotExist as well as some syscall errors.
   func IsNotExist(err error) bool {
-      if pe, ok := err.(*PathError); ok {
-          err = pe.Err
-      }
-      return err == syscall.ENOENT || err == ErrNotExist
+    if pe, ok := err.(*PathError); ok {
+      err = pe.Err
+    }
+    return err == syscall.ENOENT || err == ErrNotExist
   }
   ```
 
@@ -1443,26 +1447,26 @@ go test -race
   >
   > ```go
   > func Withdraw(amount int) bool {
-  >     mu.Lock()
-  >     defer mu.Unlock()
-  >     deposit(-amount)
-  >     if balance < 0 {
-  >         deposit(amount)
-  >         return false // insufficient funds
-  >     }
-  >     return true
+  >      mu.Lock()
+  >      defer mu.Unlock()
+  >      deposit(-amount)
+  >      if balance < 0 {
+  >        deposit(amount)
+  >        return false // insufficient funds
+  >      }
+  >      return true
   > }
   > 
   > func Deposit(amount int) {
-  >     mu.Lock()
-  >     defer mu.Unlock()
-  >     deposit(amount)
+  >      mu.Lock()
+  >      defer mu.Unlock()
+  >      deposit(amount)
   > }
   > 
   > func Balance() int {
-  >     mu.Lock()
-  >     defer mu.Unlock()
-  >     return balance
+  >      mu.Lock()
+  >      defer mu.Unlock()
+  >      return balance
   > }
   > 
   > // This function requires that the lock be held.
@@ -1480,12 +1484,12 @@ go test -race
 ```go
 var x, y int
 go func() {
-    x = 1 // A1
-    fmt.Print("y:", y, " ") // A2
+  x = 1 // A1
+  fmt.Print("y:", y, " ") // A2
 }()
 go func() {
-    y = 1                   // B1
-    fmt.Print("x:", x, " ") // B2
+  y = 1                   // B1
+  fmt.Print("x:", x, " ") // B2
 }()
 ```
 
@@ -1513,20 +1517,20 @@ go func() {
 
 ```go
 func loadIcons() {
-    icons = map[string]image.Image{
-        "spades.png":   loadIcon("spades.png"),
-        "hearts.png":   loadIcon("hearts.png"),
-        "diamonds.png": loadIcon("diamonds.png"),
-        "clubs.png":    loadIcon("clubs.png"),
-    }
+  icons = map[string]image.Image{
+    "spades.png":   loadIcon("spades.png"),
+    "hearts.png":   loadIcon("hearts.png"),
+    "diamonds.png": loadIcon("diamonds.png"),
+    "clubs.png":    loadIcon("clubs.png"),
+  }
 }
 
 // NOTE: not concurrency-safe!
 func Icon(name string) image.Image {
-    if icons == nil {
-        loadIcons() // one-time initialization
-    }
-    return icons[name]
+  if icons == nil {
+    loadIcons() // one-time initialization
+  }
+  return icons[name]
 }
 ```
 
@@ -1534,11 +1538,11 @@ func Icon(name string) image.Image {
 >
 > ```go
 > func loadIcons() {
->     icons = make(map[string]image.Image)
->     icons["spades.png"] = loadIcon("spades.png")
->     icons["hearts.png"] = loadIcon("hearts.png")
->     icons["diamonds.png"] = loadIcon("diamonds.png")
->     icons["clubs.png"] = loadIcon("clubs.png")
+>      icons = make(map[string]image.Image)
+>      icons["spades.png"] = loadIcon("spades.png")
+>      icons["hearts.png"] = loadIcon("hearts.png")
+>      icons["diamonds.png"] = loadIcon("diamonds.png")
+>      icons["clubs.png"] = loadIcon("clubs.png")
 > }
 > ```
 >
@@ -1699,8 +1703,8 @@ vet              在软件包上运行go tool vet
       > ```shell
       > func Since(t Time) Duration
       > 
-      >     Since returns the time elapsed since t.
-      >     It is shorthand for time.Now().Sub(t).
+      >    Since returns the time elapsed since t.
+      >    It is shorthand for time.Now().Sub(t).
       > ```
 
     - ```shell
@@ -1712,7 +1716,7 @@ vet              在软件包上运行go tool vet
       > ```shell
       > func (d Duration) Seconds() float64
       > 
-      >     Seconds returns the duration as a floating-point number of seconds.
+      >    Seconds returns the duration as a floating-point number of seconds.
       > ```
 
   - *godoc*
@@ -1780,7 +1784,7 @@ vet              在软件包上运行go tool vet
       go list -json hash
       ```
 
-      > ```shell
+      > ```javascript
       > {
       >     "Dir": "/home/gopher/go/src/hash",
       >     "ImportPath": "hash",
@@ -1872,6 +1876,12 @@ vet              在软件包上运行go tool vet
   - **Format**：格式化日期和时间信息的方式。参数是一个格式化模板。
   - **Tick**：建了一个在循环中调用time.Sleep的goroutine，每次被唤醒时发送一个事件。Tick函数挺方便，但是只有当程序整个生命周期都需要这个时间时我们使用它才比较合适。
 
+# 测试
+
+> - go test命令会遍历所有的`*_test.go`文件中符合上述命名规则的函数，生成一个临时的main包用于调用相应的测试函数，接着构建并运行、报告测试结果，最后清理测试中生成的临时文件。
+>
+> - 在包目录内，所有以`_test.go`为后缀名的源文件在执行go build时不会被构建成包的一部分，它们是go test测试的一部分。
+
 # 反射
 
 > 需要反射的原因：没有办法来检查未知类型的表示方式。
@@ -1893,6 +1903,18 @@ var w io.Writer = os.Stdout
 fmt.Println(reflect.TypeOf(w)) // "*os.File"
 ```
 
+- **reflect.Type.Field**
+
+  > 返回一个reflect.StructField，里面含有每个成员的名字、类型和可选的成员标签等信息。其中成员标签信息对应reflect.StructTag类型的字符串。
+
+- **reflect.StructTag.Get**
+
+  > 用于解析和根据特定key提取的子串。
+
+- **reflect.Type.Method(i)**
+
+  > 返回一个reflect.Method的实例，对应一个用于描述一个方法的名称和类型的结构体。
+
 ## reflect.Value
 
 > reflect.ValueOf 返回的结果也是具体的类型。
@@ -1905,6 +1927,10 @@ fmt.Println(reflect.TypeOf(w)) // "*os.File"
 
   > reflect.ValueOf 的逆操作，返回一个 interface{} 类型。
 
+- **reflect.Value.Type**
+
+  > 返回具体类型所对应的 reflect.Type。
+
 - **reflect.Value.Kind**
 
   > 类型是有限的。Kind 只关心底层表示，可以解放 *switch*。
@@ -1915,4 +1941,175 @@ fmt.Println(reflect.TypeOf(w)) // "*os.File"
   > - interface 类型。
   > - 还有表示空值的 Invalid 类型。（空的 reflect.Value 的 kind 即为 Invalid。）
 
-```jav
+- **reflect.Value.CanAddr**
+
+  > 判断其是否可以被取地址。每当我们通过指针间接地获取的reflect.Value都是可取地址的。
+
+- **reflect.Value.UnsafeAddr**
+
+  > 获取不安全的变量地址，类型是uintptr。
+
+- **reflect.Value.Addr**
+
+  > 获取指向结构体字段的指针。
+
+- **reflect.Value.CanSet**
+
+  > 用于检查对应的reflect.Value是否是可取地址并可被修改的。
+
+- **reflect.Value.Set**：更新对应的值
+
+  > 要确保改类型的变量可以接受对应的值，否则panic。
+  >
+  > 对一个不可取地址的reflect.Value调用Set方法也会导致panic异常。
+
+- **reflect.Value.Method(i)**
+
+  > 返回一个reflect.Value以表示对应的值。
+
+- **reflect.Value.Call**
+
+  > 调用一个Func类型的Value。
+
+### 更新值
+
+1. ```go
+   x := 2
+   d := reflect.ValueOf(&x).Elem()   // d refers to the variable x
+   px := d.Addr().Interface().(*int) // px := &x
+   *px = 3                           // x = 3
+   ```
+
+   > 1. 调用Addr()方法，它返回一个Value，里面保存了指向变量的指针。
+   > 2. 调用Interface()方法，也就是返回一个interface{}，里面包含指向变量的指针。
+   > 3. 使用类型的断言机制将得到的interface{}类型的接口强制转为普通的类型指针。
+
+2. ```go
+   d.Set(reflect.ValueOf(4))
+   d.SetInt(3)
+   ```
+
+   > SetInt、SetUint、SetString和SetFloat。
+   >
+   > 以SetInt为例，只要变量是某种类型的有符号整数就可以工作，即使是一些命名的类型、甚至只要底层数据类型是有符号整数就可以，而且如果对于变量类型值太大的话会被自动截断。
+   >
+   > 对于一个引用interface{}类型的reflect.Value调用SetInt会导致panic异常，即使那个interface{}变量对于整数类型也不行。
+
+3. 反射可以**读取**结构体的**未导出**成员，不能**修改未导出**成员。
+
+4. 对不可取地址的reflect.Value调用Set方法也会导致**panic异常**。
+
+   ```go
+   x := 2
+   b := reflect.ValueOf(x)
+   b.Set(reflect.ValueOf(3)) // panic: Set using unaddressable value
+   ```
+
+   > **重点**：：：：：需要ValueOf(&x).Elem()。
+
+### 类型处理
+
+- **Slice和数组**
+
+  - **Len**：返回slice或数组值中的元素个数。
+
+  - **Index(i)**：获得索引i对应的元素，返回的也是一个reflect.Value；索引i超出范围的话将导致panic异常。
+
+- **结构体**
+
+  - **NumField**：返回结构体中成员的数量。
+
+  - **Field(i)**：以reflect.Value类型返回第i个成员的值。
+
+- **Maps**
+
+  - **MapKeys**：返回一个reflect.Value类型的slice，每一个元素对应map的一个key。
+
+  - **MapIndex(key)**：返回map中key对应的value。
+
+- **指针**
+
+  - **Elem**：返回指针指向的变量，依然是reflect.Value类型。nil也安全。
+
+  - **IsNil**：测试空指针。
+
+- **接口**
+
+  - **Elem()**：来获取接口对应的动态值，并且打印对应的类型和值。
+
+  - **IsNil**：测试接口是否是nil
+
+## reflect.DeepEqual
+
+> 深度判断相等
+
+## 警告
+
+- 基于反射的代码是比较脆弱的；在编译时检查不出错误。降低了程序的安全性，还影响了自动化重构和分析工具的准确性，因为它们无法识别运行时才能确认的类型信息。
+- 反射的操作不能做静态类型检查，而且大量反射的代码通常难以理解。
+- 基于反射的代码通常比正常的代码运行速度慢一到两个数量级。对于性能关键路径的函数，最好避免使用反射。
+
+# 底层编程
+
+## unsafe
+
+- **Sizeof**：返回操作数在内存中的字节大小，参数可以是任意类型的表达式，但是它并不会对表达式进行求值。
+
+  | 类型                            | 大小                              |
+  | ------------------------------- | --------------------------------- |
+  | `bool`                          | 1个字节                           |
+  | `intN, uintN, floatN, complexN` | N/8个字节（例如float64是8个字节） |
+  | `int, uint, uintptr`            | 1个机器字                         |
+  | `*T`                            | 1个机器字                         |
+  | `string`                        | 2个机器字（data、len）            |
+  | `[]T`                           | 3个机器字（data、len、cap）       |
+  | `map`                           | 1个机器字                         |
+  | `func`                          | 1个机器字                         |
+  | `chan`                          | 1个机器字                         |
+  | `interface`                     | 2个机器字（type、value）          |
+
+  > 机器字：操作系统位数，对齐位。
+  >
+  > 有效的包装可以使数据结构更加紧凑，内存使用率和性能都可能会受益。
+
+- **Alignof**
+
+  > 返回对应参数的类型需要对齐的倍数。返回一个常量表达式，对应一个常量。
+  >
+  > 通常情况下布尔和数字类型需要对齐到它们本身的大小（最多8个字节）；
+  >
+  > 其它的类型对齐到机器字大小。
+
+- **Offsetof**
+
+  > 参数必须是一个字段 `x.f`，然后返回 `f` 字段相对于 `x` 起始地址的偏移量，包括可能的空洞。
+
+- **Pointer**
+
+  > 可以包含任意类型变量的地址。
+
+  - **解地址**：不可以直接通过`*p`来获取unsafe.Pointer指针指向的真实变量的值，因为我们并不知道变量的具体类型。
+
+  - **比较**：可以比较，并且支持和nil常量比较判断是否为空指针。
+  - **深度比较**：通过比较地址值，避免递归。
+  - **uintptr**：
+    - unsafe.Pointer指针也可以被转化为uintptr类型，然后保存到指针型数值变量中。
+    - 但是将uintptr转为unsafe.Pointer指针可能会破坏类型系统，因为并不是所有的数字都是有效的内存地址。
+    - 将unsafe.Pointer指针转为原生数字，然后再转回为unsafe.Pointer类型指针的操作也是不安全的。
+
+  ```go
+  pT := uintptr(unsafe.Pointer(new(T))) // 提示: 错误!
+  ```
+
+  > 并没有指针引用`new`新创建的变量，因此该语句执行完成之后，垃圾收集器有权马上回收其内存空间，所以返回的pT将是无效的地址。
+
+  ```go
+  // NOTE: subtly incorrect!
+  tmp := uintptr(unsafe.Pointer(&x)) + unsafe.Offsetof(x.b)
+  pb := (*int16)(unsafe.Pointer(tmp))
+  *pb = 42
+  ```
+
+  > 产生错误的原因很微妙。有时候垃圾回收器会移动一些变量以降低内存碎片等问题。这类垃圾回收器被称为**移动GC**【虽然目前的Go语言实现还没有使用移动GC】。当一个变量被移动，所有的保存该变量旧地址的指针必须同时被更新为变量移动后的新地址。
+
+## cgo

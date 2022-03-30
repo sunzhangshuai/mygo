@@ -119,7 +119,7 @@ func (e *Exercises) Task4() {
 	cmd := exec.Command("go", "list", "./...")
 	res, _ := cmd.Output()
 	buf := bytes.NewBuffer(res)
-	scaner := bufio.NewScanner(buf)
+	scanner := bufio.NewScanner(buf)
 
 	type pkgInfo struct {
 		Imports []string `json:"Imports"`
@@ -133,8 +133,8 @@ func (e *Exercises) Task4() {
 
 	group := sync.WaitGroup{}
 
-	for scaner.Scan() {
-		pkgName := scaner.Text()
+	for scanner.Scan() {
+		pkgName := scanner.Text()
 		group.Add(1)
 		go func() {
 			defer group.Done()
