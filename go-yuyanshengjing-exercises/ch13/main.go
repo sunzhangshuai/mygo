@@ -2,9 +2,17 @@ package ch13
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"unsafe"
+
+	"exercises/ch13/bzip"
+	"exercises/util"
 )
 
 // Exercises 练习
@@ -31,6 +39,43 @@ func (e *Exercises) Task2() {
 	key2 := data{"key3", "key3", &key1}
 	key1.Next = &key2
 	fmt.Println(isLoop(reflect.ValueOf(key1)))
+}
+
+// Task3 使用sync.Mutex以保证bzip2.writer在多个goroutines中被并发调用是安全的。
+// go run main.go -ch=13 -task=3
+func (e *Exercises) Task3() {
+	file, err := util.NewFile(1, filepath.Join("file", "zs.zip"))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	ret, err := http.Get("http://gopl.io/")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	str := util.ReadString(ret.Body)
+	w := bzip.NewWriter(file)
+	n, err := w.Write([]byte(str))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Println(n)
+}
+
+// Task4 因为C库依赖的限制。 使用os/exec包启动/bin/bzip2命令作为一个子进程，提供一个纯Go的bzip.NewWriter的替代实现
+// （译注：虽然是纯Go实现，但是运行时将依赖/bin/bzip2命令，其他操作系统可能无法运行）。
+// go run main.go -ch=13 -task=4
+func (e *Exercises) Task4() {
+	filename := util.GetFileName(1, filepath.Join("file", "zs.html"))
+	cmd := exec.Command("bzip2", "-k", filename)
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
 }
 
 var ptrStack = make(map[unsafe.Pointer]bool)
