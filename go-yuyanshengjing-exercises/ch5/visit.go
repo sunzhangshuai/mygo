@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-var links []string
+var sLinks []string
 var labelCount map[string]int
 var texts []string
 var visitData = map[string]string{"a": "href", "img": "src", "link": "href", "script": "href"}
@@ -22,7 +22,7 @@ func visit(n *html.Node) {
 		if key, ok := visitData[n.Data]; ok {
 			for _, a := range n.Attr {
 				if a.Key == key {
-					links = append(links, a.Val)
+					sLinks = append(sLinks, a.Val)
 				}
 			}
 		}
@@ -39,8 +39,8 @@ func visit(n *html.Node) {
 
 // printData 打印数据
 func printData() {
-	lks, _ := json.MarshalIndent(links, "", "\t")
-	fmt.Println("links：", string(lks))
+	lks, _ := json.MarshalIndent(sLinks, "", "\t")
+	fmt.Println("sLinks：", string(lks))
 	lc, _ := json.MarshalIndent(labelCount, "", "\t")
 	fmt.Println("labelCount：", string(lc))
 	ltx, _ := json.MarshalIndent(texts, "", "\t")
@@ -49,7 +49,7 @@ func printData() {
 
 // init 初始化
 func init() {
-	links = make([]string, 0, 100)
+	sLinks = make([]string, 0, 100)
 	labelCount = make(map[string]int)
 	texts = make([]string, 0, 100)
 }

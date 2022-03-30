@@ -822,17 +822,17 @@ func name(parameter-list) (result-list) {
 
 ## Deferred函数
 
-1. 只需要在调用普通函数或方法前加上关键字defer，就完成了defer所需要的语法。
+1. **语法**：在调用普通函数或方法前加上关键字defer。
 
-2. 直到包含该defer语句的函数执行完毕时，defer后的函数才会被执行。【defer 必须要能执行到】
+2. **执行时间**：直到包含该defer语句的函数执行完毕时，defer后的函数才会被执行。【**defer 必须要能执行到**】
 
-3. 不论包含defer语句的函数是通过return正常结束，还是由于panic导致的异常结束。
+3. **执行情况**：通过return正常结束，或由于panic导致的异常结束，都会执行defer。
 
-4. 你可以在一个函数中执行多条defer语句，它们的执行顺序与声明顺序相反。
+4. **执行顺序**：可以在一个函数中执行多条defer语句，执行顺序与声明顺序相反。
 
-5. defer语句经常被用于处理成对的操作，如打开、关闭、连接、断开连接、加锁、释放锁。
+5. **使用场景**：经常被用于处理成对的操作，如打开、关闭、连接、断开连接、加锁、释放锁。
 
-6. 对匿名函数采用defer机制，可以使其观察函数的返回值。延迟执行的匿名函数甚至可以修改函数返回给调用者的返回值。
+6. **修改返回值**：对匿名函数采用defer机制，可以使其观察函数的返回值。延迟执行的匿名函数甚至可以修改函数返回给调用者的返回值。
 
    ```go
    func double(x int) (result int) {
@@ -842,22 +842,43 @@ func name(parameter-list) (result-list) {
    _ = double(4)
    // Output:
    // "double(4) = 8"
+   
+   func triple(x int) (result int) {
+       defer func() { result += x }()
+       return double(x)
+   }
+   fmt.Println(triple(4)) // "12"
    ```
 
-7. 解决循环defer的方法是将循环体中的defer语句移至另外一个函数。在每次循环时，调用这个函数。
+7. **循环中defer**：解决方法是将循环体中的defer语句移至另外一个函数。在每次循环时，调用这个函数。
 
 ## Panic异常
 
-1. Go的类型系统会在编译时捕获很多错误，但有些错误只能在运行时检查，如数组访问越界、空指针引用等。这些运行时错误会引起painc异常。
-2. 当panic异常发生时，程序会中断运行，并立即执行在该goroutine中被延迟的函数。
-3. panic一般用于严重错误，如程序内部的逻辑不一致。所以对于大部分漏洞，我们应该使用Go提供的错误机制，而不是panic，尽量避免程序的崩溃。
-4. runtime包允许程序员输出堆栈信息。
-5. 在Go的panic机制中，延迟函数的调用在释放堆栈信息之前。
+>  Go的类型系统会在编译时捕获很多错误，但有些错误只能在运行时检查，如数组访问越界、空指针引用等。这些运行时错误会引起painc异常。
+
+1. **panic异常发生**：程序会中断运行，并立即执行在该goroutine中被延迟的函数。
+
+2. **使用场景**：panic一般用于严重错误，如程序内部的逻辑不一致。所以对于大部分漏洞，我们应该使用Go提供的错误机制，而不是panic，尽量避免程序的崩溃。
+
+3. **输出堆栈**：runtime包允许程序员输出堆栈信息。
+
+   ```go
+   func main() {
+       defer printStack()
+       f(3)
+   }
+   func printStack() {
+       var buf [4096]byte
+       n := runtime.Stack(buf[:], false)
+       os.Stdout.Write(buf[:n])
+   }
+   ```
+
+   > 在Go的panic机制中，延迟函数的调用在释放堆栈信息之前。
 
 ## Recover捕获异常
 
 1. 在deferred函数内部，panic value被附加到错误信息中；并用err变量接收错误信息，返回给调用者。
-2. 我们也可以通过调用runtime.Stack往错误信息中添加完整的堆栈调用信息。
 3. 为了标识某个panic是否应该被恢复，我们可以将panic value设置成特殊类型。在recover时对panic value进行检查，如果发现panic value是特殊类型，就将这个panic作为error处理，如果不是，则按照正常的panic进行处理。
 
 # 方法
