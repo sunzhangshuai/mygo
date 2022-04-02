@@ -511,11 +511,80 @@ func ReadDir(dirname string) ([]fs.FileInfo, error)
 
 ## fmt 格式化IO
 
-### Printing
+### 接口
 
-#### 占位符
+#### Stringer 接口
 
-**普通占位符**
+```go
+type Stringer interface {
+  String() string
+}
+```
+
+> 如果格式化输出某种类型的值，只要它实现了 String() 方法，那么会调用 String() 方法进行处理。
+
+#### Formatter 接口
+
+```go
+type Formatter interface {
+  Format(f State, c rune)
+}
+```
+
+> Formatter 接口由带有定制的格式化器的值所实现。 Format 的实现可调用 Sprintf 或 Fprintf(f) 等函数来生成其输出。
+
+- **fmt.State 是一个接口**：由于 Format 方法是被 fmt 包调用的，它内部会实例化好一个 fmt.State 接口的实例，我们不需要关心该接口
+- **自定义占位符**：同时 fmt 包中和类型相对应的预定义占位符会无效。
+- **Stringer 接口失效**：实现了 Formatter 接口，相应的 Stringer 接口不起作用。
+- **第二个参数**：是占位符中%后的字母（有精度和宽度会被忽略，只保留字母）。
+
+#### GoStringer 接口
+
+```go
+type GoStringer interface {
+  GoString() string
+}
+```
+
+> 定义了类型的Go语法格式。用于打印(Printf)格式化占位符为 %#v 的值。
+>
+> 一般的，我们不需要实现该接口。
+
+#### Scanner 和 ScanState 接口
+
+- **Scanner 接口**
+
+  > 任何实现了 Scan 方法的对象都实现了 Scanner 接口，Scan 方法会从输入读取数据并将处理结果存入接收端，接收端必须是有效的指针。
+
+- **ScanState 接口**
+
+  > 是一个交给用户定制的 Scanner 接口的参数的接口。
+
+### 函数
+
+#### Printing
+
+> - `S/F/Printf`函数通过**指定的格式**输出或格式化内容；
+>
+> - `S/F/Print`函数只是使用**默认的格式**输出或格式化内容；
+>
+> - `S/F/Println`函数使用**默认的格式**输出或格式化内容，同时会**在最后加上**"换行符"。
+
+##### Fprint、Fprintf、Fprintln
+
+> 第一个参数接收一个io.Writer类型，会将内容输出到 io.Writer 中去。
+
+##### Sprint、Sprintf、Sprintln
+
+> 格式化内容为 string 类型，而并不输出到某处，需要格式化字符串并返回时，可以用这组函数。
+
+##### Print、Printf、Println
+
+> 调用相应的F开头一类函数。将内容输出到标准输出中。
+
+##### 占位符
+
+###### 普通占位符
 
 | 占位符 | 说明                                                         | 举例                                              | 输出                                |
 | ------ | ------------------------------------------------------------ | ------------------------------------------------- | ----------------------------------- |
@@ -524,13 +593,13 @@ func ReadDir(dirname string) ([]fs.FileInfo, error)
 | %T     | 相应值的类型的Go语法表示                                     | Printf("%T", site)                                | main.Website                        |
 | %%     | 字面上的百分号，并非值的占位符                               | Printf("%%")                                      | %                                   |
 
-**布尔占位符**
+###### 布尔占位符
 
 | 占位符 | 说明                 | 举例               | 输出 |
 | ------ | -------------------- | ------------------ | ---- |
 | %t     | 单词 true 或 false。 | Printf("%t", true) | true |
 
-**整数占位符**
+###### 整数占位符
 
 | 占位符 | 说明                                       | 举例                 | 输出   |
 | ------ | ------------------------------------------ | -------------------- | ------ |
@@ -543,7 +612,7 @@ func ReadDir(dirname string) ([]fs.FileInfo, error)
 | %X     | 十六进制表示，字母形式为大写 A-F           | Printf("%x", 13)     | D      |
 | %U     | Unicode格式：U+1234，等同于 "U+%04X"       | Printf("%U", 0x4E2D) | U+4E2D |
 
-**浮点数和复数的组成部分（实部和虚部）**
+###### 浮点数和复数的组成部分（实部和虚部）
 
 | 占位符 | 说明                                                         | 举例                   | 输出         |
 | ------ | ------------------------------------------------------------ | ---------------------- | ------------ |
@@ -554,7 +623,7 @@ func ReadDir(dirname string) ([]fs.FileInfo, error)
 | %g     | 根据情况选择 %e 或 %f 以产生更紧凑的（无末尾的0）输出        | Printf("%g", 10.20)    | 10.2         |
 | %G     | 根据情况选择 %E 或 %f 以产生更紧凑的（无末尾的0）输出        | Printf("%G", 10.20+2i) | (10.2+2i)    |
 
-**字符串与字节切片**
+###### 字符串与字节切片
 
 | 占位符 | 说明                                   | 举例                                 | 输出           |
 | ------ | -------------------------------------- | ------------------------------------ | -------------- |
@@ -563,11 +632,160 @@ func ReadDir(dirname string) ([]fs.FileInfo, error)
 | %x     | 十六进制，小写字母，每字节两个字符     | Printf("%x", "golang")               | 676f6c616e67   |
 | %X     | 十六进制，大写字母，每字节两个字符     | Printf("%X", "golang")               | 676F6C616E67   |
 
-**指针**
+###### 指针
 
 | 占位符 | 说明                  | 举例                | 输出     |
 | ------ | --------------------- | ------------------- | -------- |
 | %p     | 十六进制表示，前缀 0x | Printf("%p", &site) | 0x4f57f0 |
 
-## bufio
+###### 其它标记
+
+| 占位符 | 说明                                                         | 举例                  | 输出           |
+| ------ | ------------------------------------------------------------ | --------------------- | -------------- |
+| +      | 总打印数值的正负号<br>对于%q（%+q）保证只输出ASCII编码的字符。 | Printf("%+q", "中文") | "\u4e2d\u6587" |
+| -      | 在右侧而非左侧填充空格（左对齐该区域）                       |                       |                |
+| #      | 备用格式：<br>八进制：添加前导 0（%#o）<br>十六进制：添加前导 0x（%#x）或0X（%#X）<br>%p：（%#p）去掉前导 0x<br>%q：（%#q）打印原始（即反引号围绕的）字符串<br>如果是可打印字符，%U：（%#U）会写出该字符的Unicode 编码形式（如字符 x 会被打印成 U+0078 'x'）。 | Printf("%#U", '中')   | U+4E2D '中'    |
+| ' '    | （空格）为数值中省略的正负号留出空白（% d）<br>以十六进制（% x, % X）打印字符串或切片时，在字节之间用空格隔开 |                       |                |
+| 0      | 填充前导的0而非空格；对于数字，这会将填充移到正负号之后      |                       |                |
+
+###### 宽度与精度
+
+> 宽度与精度的控制格式以 Unicode 码点为单位。
+>
+> 宽度为输出的最小字符数，如果必要的话会为已格式化的形式填充空格
+
+- **数值**：宽度为该数值占用区域的最小宽度；精度为小数点之后的位数。
+  - %g/%G：精度为所有数字的总数。**默认精度**为确定该值所必须的最小位数。
+  - %e 和 %f 的**默认精度**为6。
+- **字符串**：精度为输出的最大字符数，如果必要的话会直接截断。
+
+###### 格式化错误
+
+> 如果给占位符提供了无效的实参（例如将一个字符串提供给 %d），所生成的字符串会包含该问题的描述。
+
+| 错误类型              | 格式                        | 举例                                                 | 输出                            |
+| --------------------- | --------------------------- | ---------------------------------------------------- | ------------------------------- |
+| 类型错误或占位符未知  | %!verb(**type**=value)      | Printf("%d", hi)                                     | %!d(string=hi)                  |
+| 实参太多              | %!(EXTRA **type**=value)    | Printf("hi", "guys")                                 | hi%!(EXTRA string=guys)         |
+| 实参太少              | %!verb(MISSING)             | Printf("hi%d")                                       | hi %!d(MISSING)                 |
+| 宽度或精度不是int类型 | %!(BADWIDTH) 或 %!(BADPREC) | Printf("%*s", 4.5, "hi")<br>Printf("%.s", 4.5, "hi") | %!(BADWIDTH)hi<br>%!(BADPREC)hi |
+
+#### Scanning
+
+> 1. **Scan、Scanf 、Scanln**：从 os.Stdin 中读取。
+> 2. **Fscan、Fscanf、Fscanln**：从指定的 io.Reader 中读取。
+> 3. **Sscan、Sscanf、Sscanln**：从实参字符串中读取。
+
+##### Scanln、Fscanln 和 Sscanln
+
+> 在换行符处停止扫描。且需要条目紧随换行符之后。
+
+##### Scanf、Fscanf 和 Sscanf
+
+> 需要输入换行符来匹配格式中的换行符
+
+- 根据格式字符串解析实参，类似于 Printf，但有例外。
+
+  - **%p、%T**： 没有实现。
+  - **%e、%E、%f、%F、%g、%G**：完全等价，且可扫描任何浮点数或复数数值。
+  - **%s、%v**：在扫描字符串时会将其中的空格作为分隔符。
+    - **%v**：扫描整数时，可接受友好的进制前缀0（八进制）和0x（十六进制）。
+  - **#、+**：没有实现
+
+- **宽度**：被解释为输入的文本
+
+  > %5s 意为最多从输入中读取5个 rune 来扫描成字符串。
+
+- **精度**：没有精度的语法
+
+- **连续空白字符**：（除换行符外）都等价于单个空格。
+
+##### Scan、Fscan、Sscan
+
+> 将换行符视为空格。
+>
+> 这组函数将连续由空格分隔的值存储为连续的实参。
+
+## bufio - 缓存IO
+
+### Reader 类型和方法
+
+```go
+type Reader struct {
+  buf          []byte        // 缓存
+  rd           io.Reader    // 底层的io.Reader
+  // r:从buf中读走的字节（偏移）；w:buf中填充内容的偏移；
+  // w - r 是buf中可被读的长度（缓存数据的大小），也是Buffered()方法的返回值
+  r, w         int
+  err          error        // 读过程中遇到的错误
+  lastByte     int        // 最后一次读到的字节（ReadByte/UnreadByte)
+  lastRuneSize int        // 最后一次读到的Rune的大小 (ReadRune/UnreadRune)
+}
+
+func NewReader(rd io.Reader) *Reader {
+  // 默认缓存大小：defaultBufSize=4096
+  return NewReaderSize(rd, defaultBufSize)
+}
+```
+
+#### ReadSlice 方法
+
+```go
+func (b *Reader) ReadSlice(delim byte) (line []byte, err error)
+```
+
+> 从输入中读取，直到遇到第一个界定符（delim）为止【包含界定符】，返回一个指向缓存中字节的 slice。
+>
+> 在下次调用读操作（read）时，这些**字节会无效**：ReadSlice 返回的 []byte 是指向 Reader 中的 buffer ，而不是 copy 一份返回。
+
+- 如果 ReadSlice 在找到界定符之前遇到了 error ，它就会返回缓存中所有的数据和错误本身（经常是 io.EOF）。
+- 如果在找到界定符之前缓存已经满了，ReadSlice 会返回 bufio.ErrBufferFull 错误。
+- 当且仅当返回的结果（line）没有以界定符结束的时候，ReadSlice 返回err != nil，也就是说，如果ReadSlice 返回的结果 line 不是以界定符 delim 结尾，那么返回的 er r也一定不等于 nil（可能是bufio.ErrBufferFull或io.EOF）。
+
+#### ReadBytes 方法
+
+```go
+func (b *Reader) ReadBytes(delim byte) (line []byte, err error)
+```
+
+> ReadBytes 返回的 []byte 不会是指向 Reader 中的 buffer。**是一份拷贝**。
+
+#### ReadString 方法
+
+```go
+func (b *Reader) ReadString(delim byte) (line string, err error) {
+  bytes, err := b.ReadBytes(delim)
+  return string(bytes), err
+}
+```
+
+> 调用了 ReadBytes 方法，并将结果的 []byte 转为 string 类型。
+
+#### ReadLine 方法
+
+```go
+func (b *Reader) ReadLine() (line []byte, isPrefix bool, err error)
+```
+
+> ReadLine 是一个底层的原始行读取命令。
+>
+> ReadLine 尝试返回单独的行，不包括行尾的换行符。
+>
+> 如果一行大于缓存，isPrefix 会被设置为 true，同时返回该行的开始部分（等于缓存大小的部分）。
+>
+> 该行剩余的部分就会在下次调用的时候返回。当下次调用返回该行剩余部分时，isPrefix 将会是 false 。
+>
+> 跟 ReadSlice 一样，返回的 line 只是 buffer 的引用，在下次执行IO操作时，line 会无效。
+>
+> 返回值中，要么 line 不是 nil，要么 err 非 nil，两者不会同时非 nil
+
+#### Peek 方法
+
+```go
+func (b *Reader) Peek(n int) ([]byte, error)
+```
+
+> 该方法只是“窥探”一下 Reader 中没有读取的 n 个字节。好比栈数据结构中的取栈顶元素，但不出栈。
+>
+> 返回的 []byte 只是 buffer 中的引用，在下次IO操作后会无效。
 
