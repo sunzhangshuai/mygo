@@ -1,3 +1,5 @@
+[toc]
+
 # 输入输出
 
 ## io — 基本的 IO 接口
@@ -3036,3 +3038,609 @@ func StartProcess(name string, argv []string, attr *ProcAttr) (*Process, error)
   - Continued()：是否因收到信号 SIGCONT 而恢复。
 
 ### 运行外部命令
+
+#### 查找可执行程序
+
+```go
+func LookPath(file string) (string, error)
+```
+
+> 如果在 `PATH` 中没有找到可执行文件，则返回 `exec.ErrNotFound`。
+
+#### Cmd 及其相关方法
+
+```go
+type Cmd struct {
+    // Path 是将要执行的命令路径。
+    // 该字段不能为空（也是唯一一个不能为空的字段），如为相对路径会相对于 Dir 字段。
+    // 通过 Command 初始化时，会在需要时调用 LookPath 获得完整的路径。
+    Path string
+
+    // Args 存放着命令的参数，第一个值是要执行的命令（Args[0])；如果为空切片或者 nil，使用 {Path} 运行。
+    // 一般情况下，Path 和 Args 都应被 Command 函数设定。
+    Args []string
+
+    // Env 指定进程的环境变量，如为 nil，则使用当前进程的环境变量，即 os.Environ()，一般就是当前系统的环境变量。
+    Env []string
+
+    // Dir 指定命令的工作目录。如为空字符串，会在调用者的进程当前工作目录下执行。
+    Dir string
+
+    // Stdin 指定进程的标准输入，如为 nil，进程会从空设备读取（os.DevNull）
+    // 如果 Stdin 是 *os.File 的实例，进程的标准输入会直接指向这个文件
+    // 否则，会在一个单独的 goroutine 中从 Stdin 中读数据，然后将数据通过管道传递到该命令中（也就是从 Stdin 读到数据后，写入管道，该命令可以从管道读到这个数据）。在 goroutine 停止数据拷贝之前（停止的原因如遇到 EOF 或其他错误，或管道的 write 端错误），Wait 方法会一直堵塞。
+    Stdin io.Reader
+
+    // Stdout 和 Stderr 指定进程的标准输出和标准错误输出。
+    // 如果任一个为 nil，Run 方法会将对应的文件描述符关联到空设备（os.DevNull）
+    // 如果两个字段相同，同一时间最多有一个线程可以写入。
+    Stdout io.Writer
+    Stderr io.Writer
+
+    // ExtraFiles 指定额外被新进程继承的已打开文件，不包括标准输入、标准输出、标准错误输出。
+    // 如果本字段非 nil，其中的元素 i 会变成文件描述符 3+i。
+    //
+    // BUG: 在 OS X 10.6 系统中，子进程可能会继承不期望的文件描述符。
+    // http://golang.org/issue/2603
+    ExtraFiles []*os.File
+
+    // SysProcAttr 提供可选的、各操作系统特定的 sys 属性。
+    // Run 方法会将它作为 os.ProcAttr 的 Sys 字段传递给 os.StartProcess 函数。
+    SysProcAttr *syscall.SysProcAttr
+
+    // Process 是底层的，只执行一次的进程。
+    Process *os.Process
+
+    // ProcessState 包含一个已经存在的进程的信息，只有在调用 Wait 或 Run 后才可用。
+    ProcessState *os.ProcessState
+}
+```
+
+- **Command**
+
+  ```go
+  func Command(name string, arg ...string) *Cmd
+  ```
+
+  > 函数返回一个 `*Cmd`，用于使用给出的参数执行 `name` 指定的程序。返回的 `*Cmd` 只设定了 `Path` 和 `Args` 两个字段。
+  >
+  > 一般的，应该通过 `exec.Command` 函数产生 `Cmd` 实例。
+
+- **Start**
+
+  ```go
+  func (c *Cmd) Start() error
+  ```
+
+  > 开始执行 `c` 包含的命令，但并不会等待该命令完成即返回。
+
+- **Wait**
+
+  ```go
+  func (c *Cmd) Wait() error
+  ```
+
+  > `Wait` 会阻塞直到该命令执行完成，该命令必须是先通过 `Start` 执行。
+  >
+  > `Wait` 方法会在命令返回后释放相关的资源。
+
+- **Output**
+
+  ```go
+  func (c *Cmd) Output() ([]byte, error)
+  ```
+
+  > 除了 `Run()` 是 `Start`+`Wait` 的简便写法，`Output()` 更是 `Run()` 的简便写法，外加获取外部命令的输出。
+  >
+  > 要求 `c.Stdout` 必须是 `nil`，内部会将 `bytes.Buffer` 赋值给 `c.Stdout`。
+
+- **CombinedOutput**
+
+  ```go
+  func (c *Cmd) CombinedOutput() ([]byte, error)
+  ```
+
+  > `Output()` 只返回 `Stdout` 的结果，而 `CombinedOutput` 组合 `Stdout` 和 `Stderr` 的输出，即 `Stdout` 和 `Stderr` 都赋值为同一个 `bytes.Buffer`。
+
+- **StdoutPipe**
+
+  ```go
+  func (c *Cmd) StdoutPipe() (io.ReadCloser, error)
+  ```
+
+  > 返回一个在命令 `Start` 执行后与命令标准输出关联的管道。
+  >
+  > `Wait` 方法会在命令结束后会关闭这个管道，所以一般不需要手动关闭该管道。
+  >
+  > 但是在从管道读取完全部数据之前调用 `Wait` 出错了，则必须手动关闭。
+
+- **StderrPipe**
+
+  ```go
+  func (c *Cmd) StderrPipe() (io.ReadCloser, error)
+  ```
+
+  > 返回一个在命令 `Start` 执行后与命令标准错误输出关联的管道。
+  >
+  > `Wait` 方法会在命令结束后会关闭这个管道，一般不需要手动关闭该管道。
+  >
+  > 但是在从管道读取完全部数据之前调用 `Wait` 出错了，则必须手动关闭。
+
+- **StdinPipe**
+
+  ```go
+  func (c *Cmd) StdinPipe() (io.WriteCloser, error)
+  ```
+
+  > `StdinPipe` 方法返回一个在命令 `Start` 执行后与命令标准输入关联的管道。
+  >
+  > `Wait` 方法会在命令结束后会关闭这个管道。必要时调用者可以调用 `Close` 方法来强行关闭管道。
+  >
+  > 例如，标准输入已经关闭了，命令执行才完成，这时调用者需要显示关闭管道。
+
+### 进程终止
+
+```go
+func Exit(code int)
+```
+
+> `Exit` 让当前进程以给出的状态码 `code` 退出。一般来说，状态码 0 表示成功，非 0 表示出错。
+>
+> 进程会立刻终止，defer 的函数不会被执行。
+
+### 进程属性和控制
+
+#### 进程 ID
+
+> - 每个进程都会有一个进程 ID，可以通过 `os.Getpid` 获得。
+>
+> - 同时，每个进程都有创建自己的父进程，通过 `os.Getppid` 获得。
+
+#### 进程凭证
+
+> Unix 中进程都有一套数字表示的用户 ID(UID) 和组 ID(GID)，有时也将这些 ID 称之为进程凭证。
+
+- **实际用户 ID 和实际组 ID**
+
+  > 实际用户 ID（real user ID）和实际组 ID（real group ID）确定了进程所属的用户和组。
+
+  - *实际用户 ID*
+
+    ```go
+    os.Getuid()
+    ```
+
+    > 获取当前进程的实际用户 ID
+
+  - *实际组 ID*
+
+    ```go
+    os.Getgid()
+    ```
+
+    > 获取当前进程的实际组 ID
+
+- **有效用户 ID 和有效组 ID**
+
+  > 通常，有效用户 ID 及组 ID 与其相应的实际 ID 相等，但有两种方法能够致使二者不同。
+  >
+  > - 一是使用相关系统调用；
+  > - 二是执行 set-user-ID 和 set-group-ID 程序。
+
+  - *有效用户 ID*
+
+    ```go
+    os.Geteuid()
+    ```
+
+    > 获取当前进程的有效用户 ID。
+
+  - *有效组 ID*
+
+    ```go
+    os.Getegid()
+    ```
+
+    > 获取当前进程的有效组 ID。
+
+#### 操作系统用户 - os/user
+
+```go
+type User struct {
+  Uid      string // user id
+  Gid      string // primary group id
+  Username string
+  Name     string
+  HomeDir  string
+}
+```
+
+> `Current` 函数可以获取当前用户账号。而 `Lookup` 和 `LookupId` 则分别根据用户名和用户 ID 查询用户。
+
+#### 当前工作目录
+
+- **Getwd**
+
+  ```go
+  func Getwd() (dir string, err error)
+  ```
+
+  >  返回一个对应当前工作目录的根路径。如果当前目录可以经过多条路径抵达（比如符号链接），`Getwd` 会返回其中一个。
+
+- **Chdir**
+
+  ```go
+  func Chdir(dir string) error
+  ```
+
+  > 将当前工作目录修改为 `dir` 指定的目录。如果出错，会返回 `*PathError` 类型的错误。
+
+#### 改变进程的根目录
+
+> syscall.Chroot。能改变一个进程的根目录。
+
+```go
+func Chroot(path string) (err error)
+```
+
+#### 进程环境
+
+- **Environ**
+
+  ```go
+  func Environ() []string
+  ```
+
+  > 获取环境列表。
+
+- **Getenv**
+
+  ```go
+  func Getenv(key string) string
+  ```
+
+  > 检索并返回名为 `key` 的环境变量的值。如果不存在该环境变量会返回空字符串。
+  >
+  > 有时候，可能环境变量存在，只是值刚好是空。
+
+- **LookupEnv**
+
+  ```go
+  func LookupEnv(key string) (string, bool)
+  ```
+
+  > 如果变量名存在，第二个参数返回 `true`，否则返回 `false`。
+
+- **Setenv**
+
+  ```go
+  func Setenv(key, value string) error
+  ```
+
+  > 设置名为 `key` 的环境变量，值为 `value`。如果出错会返回该错误。
+  >
+  > 如果值之前存在，会覆盖。
+
+- **Unsetenv**
+
+  ```go
+  func Unsetenv(key string) error
+  ```
+
+  > 删除名为 `key` 的环境变量。
+
+- **Clearenv**
+
+  ```go
+  func Clearenv()
+  ```
+
+  > 删除所有环境变量。
+
+- **Expand**
+
+  ```go
+  func Expand(s string, mapping func(string) string) string
+  ```
+
+  > 能够将 ${var} 或 $var 形式的变量，经过 mapping 处理，得到结果。
+
+- **ExpandEnv**
+
+  ```go
+  func ExpandEnv(s string) string {Expand(s, Getenv)}
+  ```
+
+## 线程
+
+> 1. 线程是允许应用程序并发执行多个任务的一种机制。一个进程可以包含多个线程。同一个程序中的所有线程均会独立执行相同程序，且共享同一份全局内存区域。
+> 2. 同一进程中的多个线程可以并发执行。在多处理器环境下，多个线程可以同时并行。
+
+## 进程间通信
+
+# 测试
+
+## testing
+
+### 单元测试
+
+1. 单元测试中，传递给测试函数的参数是 `*testing.T` 类型。它用于管理测试状态并支持格式化测试日志。
+2. 当测试函数返回时，或者当测试函数调用 `FailNow`、 `Fatal`、`Fatalf`、`SkipNow`、`Skip`、`Skipf` 中的任意一个时，则宣告该测试函数结束。跟 `Parallel` 方法一样，以上提到的这些方法只能在运行测试函数的 goroutine 中调用。
+3. 比如 `Log` 以及 `Error` 的变种， 可以在多个 goroutine 中同时进行调用。
+
+### 子测试与子基准测试
+
+```go
+func TestFoo(t *testing.T) {
+  // <setup code>
+  t.Run("A=1", func(t *testing.T) { ... })
+  t.Run("A=2", func(t *testing.T) { ... })
+  t.Run("B=1", func(t *testing.T) { ... })
+  // <tear-down code>
+}
+```
+
+- 子测试可用于程序并行控制。只有子测试全部执行完毕后，父测试才会完成。
+
+### TestMain
+
+> 有时需要在测试之前或之后进行额外的设置（setup）或拆卸（teardown）。
+>
+> - 可以在调用 `m.Run` 前后做任何设置和拆卸。注意，在 `TestMain` 函数的最后，应该使用 `m.Run` 的返回值作为参数去调用 `os.Exit`。
+> - 则应该显式地调用 `flag.Parse`。
+
+```go
+func TestMain(m *testing.M) {
+  db.Dns = os.Getenv("DATABASE_DNS")
+  if db.Dns == "" {
+    db.Dns = "root:123456@tcp(localhost:3306)/?charset=utf8&parseTime=True&loc=Local"
+  }
+
+  flag.Parse()
+  exitCode := m.Run()
+
+  db.Dns = ""
+
+  // 退出
+  os.Exit(exitCode)
+}
+```
+
+## httptest
+
+> HTTP 测试辅助工具
+
+```go
+func TestHandleGet(t *testing.T) {
+  mux := http.NewServeMux()
+  mux.HandleFunc("/topic/", handleRequest)
+
+  r, _ := http.NewRequest(http.MethodGet, "/topic/1", nil)
+
+  w := httptest.NewRecorder()
+
+  mux.ServeHTTP(w, r)
+
+  resp := w.Result()
+  if resp.StatusCode != http.StatusOK {
+    t.Errorf("Response code is %v", resp.StatusCode)
+  }
+
+  topic := new(Topic)
+  json.Unmarshal(w.Body.Bytes(), topic)
+  if topic.Id != 1 {
+    t.Errorf("Cannot get topic")
+  }
+}
+```
+
+# 应用构件与debug
+
+## flag - 命令行参数解析
+
+> 实现了命令行参数的解析。
+
+### 定义
+
+- **flag.Xxx()**
+
+  ```go
+  var ip = flag.Int("flagname", 1234, "help message for flagname")
+  ```
+
+  > 返回一个相应类型的指针。
+
+- **flag.XxxVar()**
+
+  ```go
+  var flagvar int
+  flag.IntVar(&flagvar, "flagname", 1234, "help message for flagname")
+  ```
+
+- **自定义 Value**
+
+  ```go
+  flag.Var(&flagVal, "name", "help message for flagname")
+  ```
+
+  > flag 中对 Duration 这种非基本类型的支持，使用的就是类似这样的方式。
+
+### 解析
+
+```go
+func Parse() {
+    // Ignore errors; CommandLine is set for ExitOnError.
+    CommandLine.Parse(os.Args[1:])
+}
+```
+
+> 语法有三种形式：
+>
+> - -flag // 只支持 bool 类型。
+> - -flag=x。
+> - -flag x // 只支持非 bool 类型。
+
+- int 类型可以是十进制、十六进制、八进制甚至是负数；
+- bool 类型可以是 1, 0, t, f, true, false, TRUE, FALSE, True, False。
+- Duration 可以接受任何 time.ParseDuration 能解析的类型。
+
+### 类型
+
+#### ErrorHandling
+
+```go
+type ErrorHandling int
+
+const (
+  ContinueOnError ErrorHandling = iota
+  ExitOnError
+  PanicOnError
+)
+```
+
+> 该类型定义了在参数解析出错时错误处理方式。
+
+#### Flag
+
+```go
+// A Flag represents the state of a flag.
+type Flag struct {
+  Name     string // name as it appears on command line
+  Usage    string // help message
+  Value    Value  // value as set
+  DefValue string // default value (as text); for usage message
+}
+```
+
+> Flag 类型代表一个 flag 的状态。
+
+#### FlagSet
+
+```go
+type FlagSet struct {
+  // Usage is the function called when an error occurs while parsing flags.
+  // The field is a function (not a method) that may be changed to point to
+  // a custom error handler.
+  Usage func()
+
+  name string // FlagSet 的名字。CommandLine 给的是 os.Args[0]
+  parsed bool // 是否执行过 Parse()
+  actual map[string]*Flag // 存放实际传递了的参数（即命令行参数）
+  formal map[string]*Flag // 存放所有已定义命令行参数
+  args []string // arguments after flags // 开始存放所有参数，最后保留 非 flag（non-flag）参数
+  exitOnError bool // does the program exit if there's an error?
+  errorHandling ErrorHandling // 当解析出错时，处理错误的方式
+  output io.Writer // nil means stderr; use out() accessor
+}
+
+func NewFlagSet(name string, errorHandling ErrorHandling) *FlagSet
+```
+
+> 默认：var CommandLine = NewFlagSet(os.Args[0], ExitOnError)
+
+- **Parse**
+
+  ```go
+  func (f *FlagSet) Parse(arguments []string) error
+  ```
+
+  > 从参数列表中解析定义的 flag。方法参数 arguments 不包括命令名，即应该是 os.Args[1:]。
+
+- **Arg、 Args、NArg、NFlag**
+
+  ```go
+  func (f *FlagSet) Arg(i int) string
+  func (f *FlagSet) Args() []string
+  func (f *FlagSet) NArg() int
+  func (f *FlagSet) NFlag() int
+  ```
+
+  > - Arg(i int) 和 Args() 这两个方法就是获取 `non-flag` 参数的。
+  >
+  > - NArg() 获得 `non-flag` 的个数。
+  >
+  > - NFlag() 获得 FlagSet 中 actual 长度（即被设置了的参数个数）。
+
+- **Visit、VisitAll**
+
+  ```go
+  func (f *FlagSet) Visit(fn func(*Flag))
+  func (f *FlagSet) VisitAll(fn func(*Flag))
+  ```
+
+  > 分别用于访问 FlatSet 的 actual 和 formal 中的 Flag。
+
+- **PrintDefaults**
+
+  ```go
+  func (f *FlagSet) PrintDefaults()
+  ```
+
+  > 打印所有已定义参数的默认值（调用 VisitAll 实现），默认输出到标准错误，除非指定了 FlagSet 的 output（通过 SetOutput() 设置）。
+
+- **Set**
+
+  ```go
+  func (f *FlagSet) Set(name, value string) error
+  ```
+
+  > 设置某个 flag 的值（通过 name 查找到对应的 Flag）。
+
+#### Value 接口
+
+```go
+// Value is the interface to the dynamic value stored in a flag.
+// (The default value is represented as a string.)
+type Value interface {
+  String() string
+  Set(string) error
+}
+```
+
+> flag 包中，为 int、float、bool 等实现了该接口。借助该接口，我们可以自定义 flag。
+
+## expvar - 公共变量的标准化接口
+
+> 包 expvar 为公共变量提供了一个标准化的接口，如服务器中的操作计数器。
+>
+> - 以 JSON 格式通过 `/debug/vars` 接口以 HTTP 的方式公开这些公共变量。
+> - 可以非常容易的展示应用程序指标。
+
+```go
+import _ "expvar"
+```
+
+## log - 日志记录
+
+## runtime/debug - 运行时的调试工具
+
+# 数据持久存储
+
+## database/sql
+
+### DB
+
+> 是一个数据库句柄，代表一个具有零到多个底层连接的连接池，它可以安全的被多个 goroutine 同时使用。
+>
+> sql 包会自动创建和释放连接；它也会维护一个闲置连接的连接池。
+>
+> 如果数据库具有单连接状态的概念，该状态只有在事务中被观察时才可信。
+>
+> 一旦调用了 BD.Begin，返回的 Tx 会绑定到单个连接。
+>
+> 当调用事务 Tx 的 Commit 或 Rollback 后，该事务使用的连接会归还到 DB 的闲置连接池中。连接池的大小可以用 SetMaxIdleConns 方法控制。
+
+- 实际的 Go 程序，应该在一个 go 文件中的 init 函数中调用 `sql.Open` 初始化全局的 sql.DB 对象，供程序中所有需要进行数据库操作的地方使用。
+
+### 连接池
+
+- **db.Ping()** 会将连接立马返回给连接池。
+- **db.Exec()** 会将连接立马返回给连接池，但是它返回的 Result 对象会引用该连接，所以，之后可能会再次被使用。
+- **db.Query()** 会传递连接给 sql.Rows 对象，直到完全遍历了所有的行或 Rows 的 Close 方法被调用了，连接才会返回给连接池。
+- **db.QueryRow()** 会传递连接给 sql.Row 对象，当该对象的 Scan 方法被调用时，连接会返回给连接池。
+- **db.Begin()** 会传递连接给 sql.Tx 对象，当该对象的 Commit 或 Rollback 方法被调用时，该链接会返回给连接池。
+
+### 控制连接池
+
+- **db.SetMaxOpenConns(n int)** 设置连接池中最多保存打开多少个数据库连接。注意，它包括在使用的和空闲的。如果某个方法调用需要一个连接，但连接池中没有空闲的可用，且打开的连接数达到了该方法设置的最大值，该方法调用将堵塞。默认限制是 0，表示最大打开数没有限制。
+- **db.SetMaxIdleConns(n int)** 设置连接池中能够保持的最大空闲连接的数量。**默认值是 2**。
