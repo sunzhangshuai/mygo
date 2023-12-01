@@ -352,7 +352,7 @@ func TrimSpace(s []byte) []byte {
 
   2. 必须和有异常的栈帧**只隔一个栈帧**，`recover`函数才能正常捕获异常。
 
-     - `recover`函数被包装，无法捕获异常。
+     - `recover` 函数被包装，无法捕获异常。
 
        ```go
        defer func() {
